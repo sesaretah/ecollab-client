@@ -1,0 +1,56 @@
+@font-face {
+  font-family: "iransans";
+  src: url(../fonts/IRANSansWeb.eot);
+  src: url(../fonts/IRANSansWeb.eot) format("embedded-opentype"),
+    url(../fonts/IRANSansWeb.woff) format("woff"),
+    url(../fonts/IRANSansWeb.ttf) format("truetype");
+}
+
+* {
+  font-family: "iransans" !important;
+}
+
+.card-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.h4 {
+  font-weight: 500;
+}
+
+.page-title {
+  font-size: 0.8rem !important;
+  font-weight: 600;
+}
+
+.form-label {
+  font-size: 0.8rem;
+}
+
+.h4,
+h4 {
+  font-size: .8rem;
+}
+
+.h3, h3 {
+  font-size: 0.9rem;
+}
+
+.datepicker-input {
+  display: block;
+  min-width: calc(1.4285714em + .875rem + 2px);
+  margin: 0;
+  padding: .4375rem .75rem;
+  font-size: .875rem;
+  line-height: 1.4285714;
+  color: #656d77;
+  background: #fff;
+  text-align: center;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  border: 1px solid #dadcde;
+  border-radius: 3px;
+  transition: border-color .3s, background .3s, color .3s;
+}

@@ -4,7 +4,7 @@ import * as MyActions from "../../actions/MyActions";
 import { dict } from '../../Dict';
 import Header from "../header/header.jsx";
 import queryString from 'query-string'
-
+const t = dict['fa']
 export default class AttendanceCreate extends React.Component {
 
     constructor(props) {
@@ -15,7 +15,7 @@ export default class AttendanceCreate extends React.Component {
         this.getMultipleList = this.getMultipleList.bind(this);
         this.search = this.search.bind(this);
 
-        
+
         this.state = {
             token: window.localStorage.getItem('token'),
             title: null,
@@ -88,8 +88,8 @@ export default class AttendanceCreate extends React.Component {
             );
         } else {
             this.setState({ q: '' }, () =>
-            MyActions.getMultipleList('attendances', this.state.page, this.state, this.state.token)
-        );
+                MyActions.getMultipleList('attendances', this.state.page, this.state, this.state.token)
+            );
         }
     }
 
@@ -141,10 +141,43 @@ export default class AttendanceCreate extends React.Component {
         return result
     }
 
+    changeDuty(id, value) {
+        console.log(id, value)
+        MyActions.setInstance('attendances/change_duty', { id: id, duty: value }, this.state.token);
+        //MyActions.updateInstance('')
+    }
+
+    dutyOptions(attendance) {
+        if (this.props.duties) {
+            var options = []
+            this.props.duties.map((duty) => {
+                options.push(
+                    <option value={duty} selected={attendance.duty === duty ? true : false}>{t[duty]}</option>
+                )
+                return (
+                    <select class="form-select" onChange={(e) => this.changeDuty(attendance.id, e.target.value)}>
+                        {options}
+                    </select>
+                )
+            })
+
+        } else {
+            return (
+                <select class="form-select" onChange={(e) => this.changeDuty(attendance.id, e.target.value)}>
+                    <option value='moderator' selected={attendance.duty === 'moderator' ? true : false}>{t['moderator']}</option>
+                    <option value='presenter' selected={attendance.duty === 'presenter' ? true : false}>{t['presenter']}</option>
+                    <option value='speaker' selected={attendance.duty === 'speaker' ? true : false}>{t['speaker']}</option>
+                    <option value='listener' selected={attendance.duty === 'listener' ? true : false}>{t['listener']}</option>
+                </select>
+            )
+        }
+    }
+
     attendanceItems(attendances) {
         var result = []
         if (attendances) {
             attendances.map((attendance) => {
+                console.log(attendance)
                 var user = attendance.profile
                 result.push(
                     <div class="list-group-item" style={{ border: 'none' }}>
@@ -163,7 +196,8 @@ export default class AttendanceCreate extends React.Component {
                                 <a href="#" class="text-body d-block">{user.name}</a>
                                 <small class="d-block text-muted text-truncate mt-n1">{user.bio}</small>
                             </div>
-                            <div class="col-auto">
+                            <div class="col-auto" >
+                                {this.dutyOptions(attendance)}
                             </div>
 
                         </div>
@@ -176,11 +210,11 @@ export default class AttendanceCreate extends React.Component {
 
 
     render() {
-        const t = dict['fa']
+
         return (
             <body className="antialiased">
                 <div className="wrapper">
-                    <Header />
+                    <Header history={this.props.history} />
                     <div className="page-wrapper">
                         <div className="container-xl">
                             <div className="page-header d-print-none">

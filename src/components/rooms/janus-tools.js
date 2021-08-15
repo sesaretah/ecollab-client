@@ -1,7 +1,8 @@
 import Janus from "../../janus.js";
-import $ from 'jquery';
+import $ from "jquery";
 export function sessionCreate(room) {
   var self = this;
+  console.log('Trying to connect to', room)
   Janus.init({
     debug: "all",
     callback: function () {
@@ -13,7 +14,7 @@ export function sessionCreate(room) {
             plugin: "janus.plugin.audiobridge",
             opaqueId: self.state.opaqueId,
             success: function (pluginHandle) {
-              self.setState({ mixertest: pluginHandle });
+              self.setState({ mixertest: pluginHandle , janus: janus});
               Janus.log(
                 "Plugin attached! (" +
                   self.state.mixertest.getPlugin() +
@@ -71,15 +72,22 @@ export function sessionCreate(room) {
                       "Successfully joined room " +
                         msg["room"] +
                         " with ID " +
-                        self.state.myid
+                        self.state.myid + 
+                        'with role:' + 
+                        self.currentRole()
                     );
+                    var role = self.currentRole();
                     self.addParticipant(
                       msg["id"],
                       self.state.fullname +
                         "§" +
                         self.state.userUUID +
                         "§" +
-                        self.state.userColor
+                        self.state.userColor +
+                        "§" +
+                        self.state.initials +
+                        "§" +
+                        role,
                     );
 
                     if (!self.state.webrtcUp) {
@@ -92,9 +100,12 @@ export function sessionCreate(room) {
                         }, // This is an audio only room
                         success: function (jsep) {
                           Janus.debug("Got SDP!", jsep);
-                          var muted = true
-                          if(self.state.reloadParams && self.state.reloadParams['mic']) {
-                            muted = false
+                          var muted = true;
+                          if (
+                            self.state.reloadParams &&
+                            self.state.reloadParams["mic"]
+                          ) {
+                            muted = false;
                           }
                           var publish = { request: "configure", muted: muted };
                           self.state.mixertest.send({
@@ -133,19 +144,25 @@ export function sessionCreate(room) {
                   );
                   if (msg["participants"]) {
                     var list = msg["participants"];
-                    Janus.debug("Got a list of participants:", list);
+                    console.log(">>>>>>>>>>>>>>>");
+                    console.log("Got a list of participants:", list);
                     for (var f in list) {
                       var id = list[f]["id"];
                       var display = list[f]["display"];
                       var setup = list[f]["setup"];
                       var muted = list[f]["muted"];
+                      var role = self.currentRole();
                       self.addParticipant(
                         msg["id"],
                         self.state.fullname +
                           "§" +
                           self.state.userUUID +
                           "§" +
-                          self.state.userColor
+                          self.state.userColor +
+                          "§" +
+                          self.state.initials +
+                          "§" +
+                          role
                       );
 
                       Janus.debug(
@@ -165,7 +182,6 @@ export function sessionCreate(room) {
                   // The room has been destroyed
                   Janus.warn("The room has been destroyed!");
                 } else if (event === "event") {
-                  //console.log('Participant...', msg)
                   if (msg["participants"]) {
                     var list = msg["participants"];
                     Janus.debug("Got a list of participants:", list);
@@ -186,7 +202,7 @@ export function sessionCreate(room) {
                           muted +
                           ")"
                       );
-                      
+
                       if (talking) {
                         //console.log("%%%%%%%%",list[f]["id"],"is talking ...");
                       }
@@ -228,17 +244,14 @@ export function sessionCreate(room) {
               self.setState({ localStream: stream });
             },
             onremotestream: function (stream) {
-              console.log($("#roomaudio"))
               if ($("#roomaudio").length === 0) {
-                $("#mixedaudio")
-                  .append(
-                    '<audio class="rounded centered" id="roomaudio" width="100%" height="100%" autoplay/>'
-                  );
+                $("#mixedaudio").append(
+                  '<audio class="rounded centered" id="roomaudio" width="100%" height="100%" autoplay/>'
+                );
                 Janus.attachMediaStream(
                   document.getElementById("roomaudio"),
                   stream
                 );
-                console.log(stream)
                 self.setState({ remoteStream: stream });
               }
             },
@@ -247,8 +260,7 @@ export function sessionCreate(room) {
             },
           });
         },
-        error: function (error) {
-        },
+        error: function (error) {},
         destroyed: function () {
           window.location.reload();
         },
@@ -259,19 +271,39 @@ export function sessionCreate(room) {
 
 export function registerUsername(room) {
   var self = this;
+  var role = this.currentRole();
   var register = {
     request: "join",
-    room: room,
+    room: parseInt(room),
     pin: self.state.pin,
+    // secret: self.state.secret,
     display:
       self.state.fullname +
       " §" +
       self.state.userUUID +
       "§" +
-      self.state.userColor,
+      self.state.userColor +
+      "§" +
+      self.state.initials +
+      "§" +
+      role,
   };
   self.state.mixertest.send({ message: register });
-  self.setState({ myId: self.state.mixertest.id });
+  self.setState({ myId: self.state.mixertest.id, role: role });
+}
+
+export function currentRole() {
+  var role = "listener";
+  if (this.state.is_speaker) {
+    role = "speaker";
+  }
+  if (this.state.is_presenter) {
+    role = "presenter";
+  }
+  if (this.state.is_moderator) {
+    role = "moderator";
+  }
+  return role;
 }
 
 export function removeParticipant(id) {
@@ -282,22 +314,22 @@ export function removeParticipant(id) {
 }
 
 export function addParticipant(id, p) {
-  //console.log("Adding Participants ...", id, p);
   var self = this;
   var participant = p.split("§");
-  if (this.exisitingParticipant(participant[1])) {
+  if (participant.length > 4 && this.exisitingParticipant(participant[1])) {
     self.setState({
       participants: self.state.participants.concat({
         id: id,
         display: participant[0],
         uuid: participant[1],
         userColor: participant[2],
-        role: "listener",
+        initials: participant[3],
+        role: participant[4],
         current: "stopped-talking",
       }),
     });
   }
-  console.log("participant added:", participant[1]);
+  console.log("Adding Participants ...", participant[0], participant[4]);
 }
 
 export function exisitingParticipant(participantId) {
@@ -327,8 +359,8 @@ export function participantDisplay(participantId) {
 export function participantChangeStatus(participantId, status) {
   this.setState((prevState) => ({
     talking: {
-      ...prevState.talking, 
-      [participantId]: status, 
+      ...prevState.talking,
+      [participantId]: status,
     },
   }));
 }
@@ -336,8 +368,8 @@ export function participantChangeStatus(participantId, status) {
 export function participantChangeRoom(participantId, room) {
   this.setState((prevState) => ({
     participantRoom: {
-      ...prevState.participantRoom, 
-      [participantId]: room, 
+      ...prevState.participantRoom,
+      [participantId]: room,
     },
   }));
 }
@@ -349,20 +381,18 @@ export function toggleMute() {
     self.state.mixertest.send({
       message: { request: "configure", muted: self.state.muted },
     });
-    if(this.state.muted){
+    if (this.state.muted) {
       $("#microphone-on").show();
       $("#microphone-off").hide();
-      $("#microphone-off").css('color', 'initial');
+      $("#microphone-off").css("color", "initial");
     } else {
       $("#microphone-off").show();
-      $("#microphone-off").css('color', 'black');
+      $("#microphone-off").css("color", "black");
       $("#microphone-on").hide();
     }
-    console.log('muted', this.state.muted, this.state.myId);
+    console.log("muted", this.state.muted, this.state.myId);
   });
 
- 
- 
   //if(self.state.muted){
   self.participantChangeStatus(this.state.myId, false);
   //}
@@ -370,16 +400,21 @@ export function toggleMute() {
 
 export function forceMute() {
   var self = this;
-  
+
   this.state.mixertest.send({
     message: { request: "configure", muted: true },
-  });  
+  });
   self.participantChangeStatus(this.state.myId, false);
 }
 
 export function exitAudioRoom() {
   var self = this;
+  console.log('exitAudioRoom')
   if (this.state.mixertest) {
-    this.state.mixertest.send({ message: { request: "unpublish" } });
+    console.log('exitAudioRoom')
+    this.state.mixertest.send({ message: { request: "leave" } });
   }
 }
+
+
+

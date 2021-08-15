@@ -20,8 +20,13 @@ export function disher() {
     // variables:
         let Margin = 2;
         let Scenary = document.getElementById('Dish');
-        let Width = Scenary.offsetWidth - (Margin * 2);
-        let Height = Scenary.offsetHeight - (Margin * 2);
+        let Width = 0;
+        let Height = 0;
+        if (Scenary) {
+             Width = Scenary.offsetWidth - (Margin * 2);
+             Height = Scenary.offsetHeight - (Margin * 2);
+        }
+
         let Cameras = document.getElementsByClassName('Camera');
         let max = 0;
     

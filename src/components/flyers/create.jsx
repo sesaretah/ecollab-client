@@ -69,6 +69,7 @@ export default class FlyerCreate extends React.Component {
             [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
             [{ 'direction': 'ltr' }, { 'direction': 'rtl' }],                         // text direction
             ['image'],
+            ['video'],
             [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
             [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
             [{ 'align': [] }],          
@@ -186,7 +187,7 @@ export default class FlyerCreate extends React.Component {
         return (
             <body className="antialiased">
                 <div className="wrapper">
-                    <Header />
+                    <Header history={this.props.history}/>
                     <div className="page-wrapper">
                         <div className="container-xl">
                             <div className="page-header d-print-none">

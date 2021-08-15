@@ -114,7 +114,7 @@ export function vsessionCreate(room) {
                           ")"
                       );
                       self.vAddParticipant(list[f]["id"], list[f]["display"]);
-                      self.vNewRemoteFeed(id, display, audio, video);
+                      self.vNewRemoteFeed(id, '' ,display, audio, video);
                     }
                   }
                 } else if (event === "destroyed") {
@@ -146,7 +146,7 @@ export function vsessionCreate(room) {
                           ")"
                       );
                       self.vAddParticipant(list[f]["id"], list[f]["display"]);
-                      self.vNewRemoteFeed(id, display, audio, video);
+                      self.vNewRemoteFeed(id, '' ,display, audio, video);
                     }
                   } else if (msg["leaving"]) {
                     // One of the publishers has gone away?
@@ -225,7 +225,7 @@ export function vsessionCreate(room) {
                 self.vStreamDettacher(self.state.sfutest);
               } else {
                 console.log(self.state.vparticipants);
-                self.vStreamAttacher(self.state.sfutest);
+                self.vStreamAttacher(self.state.sfutest, self.state.name);
               }
             },
             onremotestream: function (stream) {
@@ -266,6 +266,7 @@ export function vsessionCreate(room) {
 
 export function vNewRemoteFeed(id, feeds, display, audio, video) {
   var self = this;
+  var name = display.split("§")[0];
   // A new feed has been published, create a new plugin handle and attach to it as a subscriber
   var remoteFeed = null;
   self.state.janus.attach({
@@ -392,7 +393,7 @@ export function vNewRemoteFeed(id, feeds, display, audio, video) {
     },
     onremotestream: function (stream) {
       console.log(">>>>>>>>>>>", stream);
-      self.vStreamAttacher(remoteFeed);
+      self.vStreamAttacher(remoteFeed, name);
     },
     ondata: function (data) {},
     oncleanup: function () {
@@ -441,9 +442,9 @@ export function vChangeUsername(room) {
   //self.setState({ myVroomId: self.state.mixertest.id });
 }
 
-export function vStreamAttacher(feed) {
+export function vStreamAttacher(feed, display='') {
   var self = this;
-  console.log("Attaching " + feed.id);
+  console.log("Attaching " + feed);
   console.log($("#video-" + feed.id));
   if ($("#video-" + feed.id).length == 0) {
     var localVideo = document.createElement("video");
@@ -451,7 +452,7 @@ export function vStreamAttacher(feed) {
     localVideo.muted = true;
     //localVideo.width = "initial";
     localVideo.id = "video-" + feed.id;
-    $('#Dish').append("<div id='d-"+ feed.id +"' class='Camera'></div>");  
+    $('#Dish').append("<div id='d-"+ feed.id +"' class='Camera' data-content='"+ display +"'></div>");  
      
   }
   
@@ -639,10 +640,11 @@ export function vparticipantChangeRoom(participantId, room) {
   }));
 }
 
-export function vexitAudioRoom() {
+export function exitVideoRoom() {
   var self = this;
-  if (this.state.mixertest) {
-    this.state.mixertest.send({ message: { request: "unpublish" } });
+  if (this.state.sfutest) {
+    this.state.sfutest.send({ message: { request: "unpublish" } });
+    this.state.sfutest.send({ message: { request: "leave" } });
   }
 }
 

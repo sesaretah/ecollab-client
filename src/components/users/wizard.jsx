@@ -7,6 +7,7 @@ import { CountryDropdown, RegionDropdown, CountryRegionData } from 'react-countr
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
+const t = dict['fa']
 
 export default class UserWizard extends React.Component {
 
@@ -124,13 +125,17 @@ export default class UserWizard extends React.Component {
                 <div class="card card-md">
                     <div class="card-body text-center py-4 p-sm-5">
                         <img src="./static/illustrations/undraw_sign_in_e6hj.svg" height="128" class="mb-n2" alt="" />
-                        <h1 class="mt-5">Welcome to Tabler!</h1>
-                        <p class="text-muted">Tabler comes with tons of well-designed components and features. Start your adventure with Tabler and make your dashboard great again.</p>
+                        <h1 class="mt-5">{t['welcome']}</h1>
+                        <p class="text-muted">{t['welcome_note']}</p>
+                        <p class="text-muted">{t['login_if_registered']}</p>
+                        <a href="/#/login" class="btn btn-outline-success w-100">
+                          {t['login']}
+                        </a>
                     </div>
-                    <div class="hr-text hr-text-center hr-text-spaceless">Sign Up now!</div>
+                    <div class="hr-text hr-text-center hr-text-spaceless">{t['sign_up_now']}</div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label">Your email</label>
+                            <label class="form-label">{t['your_email']}</label>
                             <div class="input-group input-group-flat">
                                 <span class="input-group-text"></span>
                                 <input type="text" onInput={(e) => { this.handleChange({ email: e.target.value }) }} class="form-control ps-1" autocomplete="off" />
@@ -139,7 +144,7 @@ export default class UserWizard extends React.Component {
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Your name</label>
+                            <label class="form-label">{t['your_name']}</label>
                             <div class="input-group input-group-flat">
                                 <span class="input-group-text"></span>
                                 <input type="text" onInput={(e) => { this.handleChange({ name: e.target.value }) }} class="form-control ps-1" autocomplete="off" />
@@ -148,16 +153,16 @@ export default class UserWizard extends React.Component {
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Choose a password</label>
+                            <label class="form-label">{t['choose_password']}</label>
                             <div class="input-group input-group-flat">
                                 <span class="input-group-text"></span>
                                 <input type="text" onInput={(e) => { this.handleChange({ password: e.target.value }) }} class="form-control ps-1" autocomplete="off" />
                             </div>
-                            <div class="form-hint">Password should be at least 8 characters.</div>
+                            <div class="form-hint">{t['password_rule']}</div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Repeat your password</label>
+                            <label class="form-label">{t['repeat_password']}</label>
                             <div class="input-group input-group-flat">
                                 <span class="input-group-text"></span>
                                 <input type="text" onInput={(e) => { this.handleChange({ password_confirmation: e.target.value }) }} class="form-control ps-1" autocomplete="off" />
@@ -177,7 +182,7 @@ export default class UserWizard extends React.Component {
                     <div class="col">
                         <div class="btn-list justify-content-end">
                             <button onClick={() => this.submit()} class="btn btn-primary">
-                                Sign Up and Continue
+                            {t['sign_up_and_continue']}  
                             </button>
                         </div>
                     </div>

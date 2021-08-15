@@ -7,6 +7,8 @@ import { dict } from '../../Dict';
 import { conf } from '../../conf';
 import Header from "../header/header.jsx";
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
+import moment from 'moment-jalaali'
+import DatePicker2 from 'react-datepicker2';
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
 const t = dict['fa']
@@ -26,6 +28,8 @@ export default class EventCreate extends React.Component {
       id: null,
       info: null,
       event_type: null,
+      start_date: moment(),
+      end_date: moment(),
       is_private: false,
       options: [],
       tags: [],
@@ -77,6 +81,8 @@ export default class EventCreate extends React.Component {
         event_type: model.event_type,
         tags: model.tags,
         is_private: model.is_private,
+        start_date: model.start_date,
+        end_date: model.end_date,
         editing: true,
       }, () => {
         console.log(this.state)
@@ -167,22 +173,22 @@ export default class EventCreate extends React.Component {
 
 
   changeDefault(e) {
-    if(this.state.is_private){
-        this.setState({is_private: false})
+    if (this.state.is_private) {
+      this.setState({ is_private: false })
     } else {
-        this.setState({is_private: true})
+      this.setState({ is_private: true })
     }
   }
 
 
 
   render() {
-    const { is_private} = this.state;
-    
+    const { is_private } = this.state;
+
     return (
       <body className="antialiased">
         <div className="wrapper">
-          <Header />
+          <Header history={this.props.history}/>
           <div className="page-wrapper">
             <div className="container-xl">
               <div className="page-header d-print-none">
@@ -233,6 +239,26 @@ export default class EventCreate extends React.Component {
                           <div class="mb-3 " id='tags' >
                             <label class="form-label" >{t['tags']}</label>
                             {this.tagShow()}
+                          </div>
+
+                          <div class="mb-3">
+                            <label class="form-label">{t['meeting_start_time']}<span class="form-label-description"></span></label>
+                            <DatePicker2
+                              timePicker={false}
+                              isGregorian={false}
+                              onChange={value => { this.setState({ start_date: value }) }}
+                              value={moment(this.state.start_date)}
+                            />
+                          </div>
+
+                          <div class="mb-3">
+                            <label class="form-label">{t['meeting_start_time']}<span class="form-label-description"></span></label>
+                            <DatePicker2
+                              timePicker={false}
+                              isGregorian={false}
+                              onChange={value => { this.setState({ end_date: value }) }}
+                              value={moment(this.state.end_date)}
+                            />
                           </div>
 
                           <div class="mb-3">

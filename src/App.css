@@ -301,3 +301,8 @@
   border-width: 0px;
   text-align: left;
 }
+
+.dropdown-menu-end[data-bs-popper] {
+  right: auto;
+  left: 0;
+}

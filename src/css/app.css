@@ -40,6 +40,7 @@ h4 {
 .datepicker-input {
   display: block;
   min-width: calc(1.4285714em + .875rem + 2px);
+  width: 100% !important;
   margin: 0;
   padding: .4375rem .75rem;
   font-size: .875rem;
@@ -53,4 +54,72 @@ h4 {
   border: 1px solid #dadcde;
   border-radius: 3px;
   transition: border-color .3s, background .3s, color .3s;
+}
+
+.maxh-250 {
+  max-height: 250px;
+}
+
+.minh-250 {
+  min-height: 250px;
+}
+
+.crop-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 80px;
+}
+
+.controls {
+  position: absolute;
+  bottom: 0;
+  left: 30%;
+  width: 50%;
+  transform: translateX(-50%);
+  height: 80px;
+  display: flex;
+  align-items: center;
+}
+
+.crop-save {
+  position: absolute;
+  bottom: 0;
+  right: 5%;
+  transform: translateX(-50%);
+  height: 80px;
+  display: flex;
+  align-items: center;
+}
+
+.slider {
+  padding: 22px 0px;
+}
+
+.upload-btn>input {
+  display: none;
+}
+
+.img-responsive {
+  padding-top: 32%;
+}
+
+
+.bg-dark-lt {
+  color: #232e3c!important;
+  background:#90a1b5a8!important;
+}
+
+.chat-title{
+  font-size: .65rem;
+  font-weight: 600;
+}
+
+.p-tight {
+  padding: .4rem .5rem !important;
+}
+.ql-video {
+  width: 100%;
+  height: 320px;
 }

@@ -50,7 +50,7 @@ export default class MeetingAttendance extends React.Component {
         return (
             <body className="antialiased">
                 <div className="wrapper">
-                    <Header />
+                    <Header history={this.props.history}/>
                     <div className="page-wrapper">
                         <div className="container-xl">
                             <div className="page-header d-print-none">

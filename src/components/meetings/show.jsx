@@ -143,6 +143,16 @@ export default class MeetingShow extends React.Component {
         }
       })
     }
+    if (klass === 'MeetingUrl') {
+      //this.setState({ bigBlueUrl: model.url})
+      console.log(model)
+      if(model.url){
+        console.log(model.url)
+        $('#bigblue-spinner').hide();
+        window.location.replace(model.url)
+      }
+      //console.log(model.url)
+    }
   }
 
   setInstance() {
@@ -340,6 +350,12 @@ export default class MeetingShow extends React.Component {
     }
   }
 
+  createBigBlue(){
+    $('#bigblue-spinner').show();
+    MyActions.getInstance('meetings/join_bigblue', this.props.match.params.id, this.state.token);
+  }
+
+
   render() {
     const t = dict['fa']
 
@@ -421,13 +437,15 @@ export default class MeetingShow extends React.Component {
                               {this.tagsShow(this.state.tags)}
                             </div>
 
-
-
                           </div>
                           <div class="card-footer">
-                            <div class="mt-2">
-                              <a href={"/#/rooms/" + this.state.room_id + "?rnd=" + uuidv4()} onClick={this.forceUpdate} class="btn btn-primary bg-lime w-100">
+                            <div class="d-flex">
+                              <a href={"/#/rooms/" + this.state.room_id + "?rnd=" + uuidv4()} onClick={this.forceUpdate} class="btn bg-green-lt">
                                 {t['enter_room']}
+                              </a>
+                              <a onClick={() => this.createBigBlue()} class="btn bg-cyan-lt ms-auto">
+                                {t['enter_bigblue_room']}
+                                <div id='bigblue-spinner' class="spinner-border text-black" role="status" style={{ display: 'none' }}></div>
                               </a>
                             </div>
                           </div>

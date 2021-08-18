@@ -134,6 +134,12 @@ export default class MeetingShow extends React.Component {
     ModelStore.removeListener("set_instance", this.setInstance);
     ModelStore.removeListener("deleted_instance", this.getInstance);
     window.localStorage.setItem(this.state.roomId, 'unchoke')
+    this.exitAll();
+  }
+
+  exitAll() {
+    this.exitAudioRoom();
+    this.exitVideoRoom();
   }
 
   componentDidMount() {
@@ -264,6 +270,16 @@ export default class MeetingShow extends React.Component {
     }
   }
 
+  exitBtn() {
+    return (
+      <a class="m-1" onClick={() => this.exitAll()}>
+        <span class="avatar" style={{ backgroundColor: '#d7d8da' }}>
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" /><path d="M7 12h14l-3 -3m0 6l3 -3" /></svg>
+        </span>
+      </a>
+    )
+  }
+
   controls() {
     return (
       <div class="card card-active mb-3" >
@@ -272,6 +288,7 @@ export default class MeetingShow extends React.Component {
           {this.cameraBtn()}
           {this.presentBtn()}
           {this.settingsBtn()}
+          {this.exitBtn()}
         </div>
       </div>
     )
@@ -362,7 +379,8 @@ export default class MeetingShow extends React.Component {
                   <div class="col-lg-4">
                     {this.showControl()}
                     <div class="card mb-3 maxh-250 ">
-                      <div class="card-body" style={{ overflowY: 'scroll' }}>
+                    <div class="card-status-top bg-danger"></div>
+                      <div class="card-body pt-2 pb-1" style={{ overflowY: 'scroll' }}>
                         <div class="row">
                           {this.speakerList()}
                         </div>
@@ -370,14 +388,15 @@ export default class MeetingShow extends React.Component {
                     </div>
 
                     <div class="card mb-3 maxh-250">
-                      <div class="card-body" style={{ overflowY: 'scroll' }}>
+                    <div class="card-status-top bg-blue"></div>
+                      <div class="card-body pt-1 pb-1" style={{ overflowY: 'scroll' }}>
                         <div class="row">
                           {this.listenerList()}
                         </div>
                       </div>
                     </div>
 
-                    <div class="card mb-3 maxh-250 minh-250">
+                    <div class="card mb-3 maxh-350 minh-350">
                       <div class="list-group list-group-flush overflow-auto" id='chat-box' style={{ maxHeight: '25rem' }}>
                         {this.chatItems()}
                       </div>

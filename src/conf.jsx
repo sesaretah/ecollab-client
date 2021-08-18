@@ -1,6 +1,6 @@
 export const conf = { 
-'server' : 'http://localhost:3001/v1',
-//'server' : '/v1',
+//'server' : 'http://localhost:3001/v1',
+'server' : '/v1',
 'socketIOServer': 'https://connect.ut.ac.ir/',
 //'socketIOServer': 'http://localhost:8081/',
 'socketServer' : 'wss://kaarafarinan.ir/ws',

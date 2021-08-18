@@ -107,9 +107,15 @@ export default class UserWizard extends React.Component {
                             </div>
                             <div class="col">
                                 <div class="btn-list justify-content-end">
+                                    <a href="https://auth.ut.ac.ir:8443/cas/login?service=https%3A%2F%2Fevent.ut.ac.ir%2Fusers%2Fservice" class="btn bg-azure-lt">
+                                        {t['cas']}
+                                    </a>
+
                                     <button onClick={() => this.submit()} class="btn btn-success">
                                         {t['login']}
                                     </button>
+
+
                                 </div>
                             </div>
                         </div>

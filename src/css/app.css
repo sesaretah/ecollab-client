@@ -64,6 +64,14 @@ h4 {
   min-height: 250px;
 }
 
+.maxh-350 {
+  max-height: 350px;
+}
+
+.minh-350 {
+  min-height: 350px;
+}
+
 .crop-container {
   position: absolute;
   top: 0;

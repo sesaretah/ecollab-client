@@ -42,6 +42,8 @@ import UploadCreate from "./components/uploads/create.jsx";
 import FlyerCreate from "./components/flyers/create.jsx";
 import FlyerEdit from "./components/flyers/create.jsx";
 
+import LoginJwt from "./components/users/loginJwt.jsx";
+
 import QuestionCreate from "./components/questions/create.jsx";
 
 import RoomShow from "./components/rooms/show.jsx";
@@ -51,11 +53,6 @@ import ProfileIndex from "./components/profiles/index.jsx";
 import { createBrowserHistory } from 'history';
 const history = createBrowserHistory();
 export default class App extends React.Component {
-  componentWillMount() {
-    history.listen((location) => {
-      console.log(location)
-    });
-  }
 
   render() {
     return (
@@ -64,6 +61,7 @@ export default class App extends React.Component {
           <Route path="/" exact component={EventIndex} />
           <Route path="/wizard" exact component={UserWizard} />
           <Route path="/login" exact component={UserLogin} />
+          <Route path="/login_jwt/:id" exact component={LoginJwt} />
 
           <Route path="/uploads/:id" exact component={UploadCreate} />
           <Route path="/uploads/cropper/:id" exact component={CropperShow} />

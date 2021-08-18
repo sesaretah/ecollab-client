@@ -16,6 +16,7 @@ export const dict = {
     'in_person': 'حضوری',
     'online': 'برخط',
     'hybrid': 'تلفیقی',
+    'filter_events':'جستجو و فیلتر رویدادها',
 
     'meeting_info':'شرح نشست',
     'meeting_title':'عنوان نشست',
@@ -29,6 +30,7 @@ export const dict = {
     'create_meeting':'ایجاد نشست',
     'create_meeting_page':'ایجاد نشست',
     'online_external': 'برخط بیرونی',
+    'filter_meetings': 'جستجو و فیلتر نشست ها',
     
 
     'exhibition_info':'شرح',
@@ -85,9 +87,13 @@ export const dict = {
     'login':'وارد شوید',
     'sign_up':'ثبت نام کنید',
     'password':'رمز عبور',
-    '':'',
+    'enter_bigblue_room':'ورود به اتاق تعامل',
     '':'',
 
+    'cas':'احراز هویت مرکزی',
+    'more':'بیشتر',
+    'date_from':'از تاریخ',
+    'date_to':'تا تاریخ',
     'logout':'خروج',
     'write_something':'اینجا بنویسید ...',
     'provide_following_info':'اطلاعات زیر را تکمیل کنید',
@@ -95,7 +101,9 @@ export const dict = {
     'submit':'ثبت',    
     'filter':'فیلتر کن',
     'search_placeholder':'جستجو...',
+    'contains_words': 'شامل حروف',
     'save':'ذخیره',
+    'filter_and_search':'فیلتر و جستجو',
     'tags': 'برچسب ها',
     'is_private':'خصوصی',
     'speakers': 'صحبت کنندگان',

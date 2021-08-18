@@ -643,7 +643,8 @@ export function vparticipantChangeRoom(participantId, room) {
 export function exitVideoRoom() {
   var self = this;
   if (this.state.sfutest) {
-    this.state.sfutest.send({ message: { request: "unpublish" } });
+    self.unPublishCamera();
+   // this.state.sfutest.send({ message: { request: "unpublish" } });
     this.state.sfutest.send({ message: { request: "leave" } });
   }
 }

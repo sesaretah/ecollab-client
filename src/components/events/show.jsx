@@ -23,6 +23,7 @@ export default class EventShow extends React.Component {
     this.handleChange = this.handleChange.bind(this);
     this.isPrivateBadge = this.isPrivateBadge.bind(this);
     this.toggleCalendar = this.toggleCalendar.bind(this);
+    this.attend = this.attend.bind(this);
 
     this.state = {
       token: window.localStorage.getItem('token'),
@@ -41,7 +42,8 @@ export default class EventShow extends React.Component {
       highlightRanges: [],
       meetingLoaded: false,
       selectedMeeting: [],
-      is_admin: false
+      is_admin: false,
+      attending: false,
     }
 
   }
@@ -50,11 +52,13 @@ export default class EventShow extends React.Component {
   componentWillMount() {
     ModelStore.on("got_instance", this.getInstance);
     ModelStore.on("deleted_instance", this.getInstance);
+    ModelStore.on("set_instance", this.getInstance);
   }
 
   componentWillUnmount() {
     ModelStore.removeListener("got_instance", this.getInstance);
     ModelStore.removeListener("deleted_instance", this.getInstance);
+    ModelStore.removeListener("set_instance", this.getInstance);
   }
 
   componentDidMount() {
@@ -87,13 +91,15 @@ export default class EventShow extends React.Component {
         tags: model.tags,
         is_private: model.is_private,
         uploads: model.uploads,
-        is_admin: model.is_admin
+        is_admin: model.is_admin,
+        attending: model.attending
       }, () => {
         this.constructCalendar();
       })
     }
     console.log(model)
   }
+
 
 
   deleteFlyer(id) {
@@ -307,6 +313,12 @@ export default class EventShow extends React.Component {
   }
 
 
+  attend(flag, attendable_id) {
+    var data = { attendable_id: attendable_id, attendable_type: 'Event', flag: flag }
+    MyActions.setInstance('attendances/attend', data, this.state.token)
+  }
+
+
 
   render() {
 
@@ -335,7 +347,8 @@ export default class EventShow extends React.Component {
                       isPrivateBadge={this.isPrivateBadge} tagsShow={this.tagsShow}
                       event_type={this.state.event_type} tags={this.state.tags}
                       toggleCalendar={this.toggleCalendar} id={this.state.id}
-                      is_admin={this.state.is_admin}
+                      is_admin={this.state.is_admin} attend={this.attend}
+                      attending={this.state.attending}
                     />
                     <AttendanceCard attendees={this.state.attendees} attendable_type='event' attendable_id={this.state.id} is_admin={this.state.is_admin} />
 

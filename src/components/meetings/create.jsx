@@ -22,6 +22,7 @@ export default class MeetingCreate extends React.Component {
     this.getInstance = this.getInstance.bind(this);
     this.setInstance = this.setInstance.bind(this);
     this.handleChange = this.handleChange.bind(this);
+    this.getList = this.getList.bind(this);
 
     this.state = {
       token: window.localStorage.getItem('token'),
@@ -36,20 +37,21 @@ export default class MeetingCreate extends React.Component {
       options: [],
       tags: [],
       is_private: false,
+      events: []
     }
 
   }
 
-
-
   componentWillMount() {
     ModelStore.on("set_instance", this.setInstance);
     ModelStore.on("got_instance", this.getInstance);
+    ModelStore.on("got_list", this.getList);
   }
 
   componentWillUnmount() {
     ModelStore.removeListener("set_instance", this.setInstance);
     ModelStore.removeListener("got_instance", this.getInstance);
+    ModelStore.removeListener("got_list", this.getList);
   }
 
   componentDidMount() {
@@ -58,6 +60,7 @@ export default class MeetingCreate extends React.Component {
     if (this.props.match.params.id) {
       MyActions.getInstance('meetings', this.props.match.params.id, this.state.token);
     }
+    MyActions.getList('events/owner', this.state.page, {}, this.state.token);
   }
 
 
@@ -70,6 +73,16 @@ export default class MeetingCreate extends React.Component {
     var model = ModelStore.getIntance()
     if (klass === 'Meeting') {
       this.props.history.push("/meetings/" + model.id)
+    }
+  }
+
+  getList() {
+    var list = ModelStore.getList()
+    var klass = ModelStore.getKlass()
+    if (list && klass === 'Event') {
+      this.setState({
+        events: list,
+      });
     }
   }
 
@@ -175,28 +188,49 @@ export default class MeetingCreate extends React.Component {
   }
 
   changeDefault(e) {
-    if(this.state.is_private){
-        this.setState({is_private: false})
+    if (this.state.is_private) {
+      this.setState({ is_private: false })
     } else {
-        this.setState({is_private: true})
+      this.setState({ is_private: true })
     }
   }
 
-  isPrivateBadge(){
-    if(this.state.is_private){
-      return(
+  isPrivateBadge() {
+    if (this.state.is_private) {
+      return (
         <span class="badge bg-red-lt">{t['private']}</span>
       )
     }
   }
 
+  eventOptions() {
+    var result = []
+    if (this.state.events) {
+      var options = [<option value=''></option>]
+
+      this.state.events.map((event) => {
+        console.log(event)
+        options.push(
+          <option value={event.id} selected={this.state.event_id == event.id ? true : false}>{event.title}</option>
+        )
+      })
+      result.push(
+        <select class="form-select" onChange={(e) => this.handleChange({ event_id: e.target.value })}>
+          {options}
+        </select>
+      )
+
+    }
+    return result
+  }
+
 
   render() {
-    const { is_private} = this.state; 
+    const { is_private } = this.state;
     return (
       <body className="antialiased">
         <div className="wrapper">
-          <Header history={this.props.history}/>
+          <Header history={this.props.history} />
           <div className="page-wrapper">
             <div className="container-xl">
               <div className="page-header d-print-none">
@@ -224,6 +258,11 @@ export default class MeetingCreate extends React.Component {
                           <div class="mb-3">
                             <label class="form-label">{t['meeting_info']}<span class="form-label-description"></span></label>
                             <textarea class="form-control" name="example-textarea-input" rows="6" placeholder={t['write_something']} onInput={(e) => { this.handleChange({ info: e.target.value }) }} value={this.state.info}></textarea>
+                          </div>
+
+                          <div class="mb-3" style={{ width: '100%' }}>
+                            <label class="form-label ">{t['event']}</label>
+                            {this.eventOptions()}
                           </div>
 
                           <div class="mb-3">

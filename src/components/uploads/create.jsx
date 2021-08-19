@@ -7,6 +7,10 @@ import Header from "../header/header.jsx";
 import { conf } from '../../conf';
 import queryString from 'query-string'
 import axios, { put } from 'axios';
+import Validation from "../common/validation.jsx";
+import {
+    validateExistence
+} from "../common/validate.js";
 
 const server = conf.server;
 
@@ -18,12 +22,17 @@ export default class UploadCreate extends React.Component {
         this.setInstance = this.setInstance.bind(this);
         this.handleChange = this.handleChange.bind(this);
 
+        this.modal = React.createRef();
+        this.validateExistence = validateExistence.bind(this);
+
         this.state = {
             token: window.localStorage.getItem('token'),
             title: null,
             id: null,
-            upload_type: null,
+            upload_type: 'file',
             file: null,
+            progress: 0,
+            validationItems: [],
         }
 
     }
@@ -100,50 +109,56 @@ export default class UploadCreate extends React.Component {
     }
 
     fileAttacher(file) {
-        this.setState({file: file})
+        this.setState({ file: file })
     }
 
     submit() {
-        var self = this;
-        self.setState({ progressShow: true }, () => console.log(this.state.progressShow))
-        const config = {
-          onUploadProgress: function (progressEvent) {
-            var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-            console.log(percentCompleted)
-            self.setState({ progress: percentCompleted })
-    
-          },
-          headers: { 'Content-Type': 'application/json', 'Authorization': "bearer " + self.state.token }
-        }
-    
-        let data = new FormData()
-        data.append('upload[attached_document]', this.state.file)
-        data.append('upload[title]', this.state.title)
-        data.append('upload[uploadable_type]', this.state.uploadable_type)
-        data.append('upload[uploadable_id]', this.state.uploadable_id)
-        data.append('upload[is_private]', this.state.is_private)
-        data.append('upload[upload_type]', this.state.upload_type)
+        if (this.validateExistence(['title', 'file'])) {
+            var self = this;
+            $('#submit-button').hide();
+            $('#submit-spinner').show();
+            self.setState({ progressShow: true }, () => console.log(this.state.progressShow))
+            const config = {
+                onUploadProgress: function (progressEvent) {
+                    var percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                    console.log(percentCompleted)
+                    self.setState({ progress: percentCompleted })
 
-        axios.post(conf.server + '/uploads', data, config)
-          .then(res => {
-            self.setState({ progressShow: false, uploadedRecently: true });
-            var upload = res.data.data
-            if(upload.upload_type === 'cover') {
-                this.props.history.push("/uploads/cropper/" + upload.uuid)
+                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': "bearer " + self.state.token }
             }
-           // MyActions.getInstance('uploads/recent', 1, this.state.token);
-            //self.props.fileUploaded()
-          })
-          .catch(err => self.setState({ progressShow: false }))
-      }
+
+            let data = new FormData()
+            data.append('upload[attached_document]', this.state.file)
+            data.append('upload[title]', this.state.title)
+            data.append('upload[uploadable_type]', this.state.uploadable_type)
+            data.append('upload[uploadable_id]', this.state.uploadable_id)
+            data.append('upload[is_private]', this.state.is_private)
+            data.append('upload[upload_type]', this.state.upload_type)
+
+            axios.post(conf.server + '/uploads', data, config)
+                .then(res => {
+                    self.setState({ progressShow: false, uploadedRecently: true });
+                    var upload = res.data.data
+                    $('#submit-spinner').hide();
+                    if (upload.upload_type === 'cover') {
+                        this.props.history.push("/uploads/cropper/" + upload.uuid)
+                    } else {
+                        this.props.history.push('/' + upload.uploadable_link)
+                    }
+                })
+                .catch(err => self.setState({ progressShow: false }))
+        }
+    }
 
     render() {
         const { is_private } = this.state;
         const t = dict['fa'];
         return (
             <body className="antialiased">
+                <Validation items={this.state.validationItems} modal={this.modal} />
                 <div className="wrapper">
-                    <Header history={this.props.history}/>
+                    <Header history={this.props.history} />
                     <div className="page-wrapper">
                         <div className="container-xl">
                             <div className="page-header d-print-none">
@@ -181,7 +196,7 @@ export default class UploadCreate extends React.Component {
                                                                 <span class="form-selectgroup-label">{t['file']}</span>
                                                             </label>
                                                             <label class="form-selectgroup-item">
-                                                                <input type="checkbox" name="name" value="video" class="form-selectgroup-input" checked={this.state.upload_type === 'video' ? true : false}onClick={(e) => this.changeType(e.target.value)} />
+                                                                <input type="checkbox" name="name" value="video" class="form-selectgroup-input" checked={this.state.upload_type === 'video' ? true : false} onClick={(e) => this.changeType(e.target.value)} />
                                                                 <span class="form-selectgroup-label">{t['video']}</span>
                                                             </label>
                                                         </div>
@@ -189,7 +204,7 @@ export default class UploadCreate extends React.Component {
 
                                                     <div class="mb-3">
                                                         <div class="form-label">{t['choose_file']}</div>
-                                                        <input type="file" class="form-control"  onInput={(e) => { this.fileAttacher(e.target.files[0]); }}/>
+                                                        <input type="file" class="form-control" onInput={(e) => { this.fileAttacher(e.target.files[0]); }} />
                                                     </div>
 
 
@@ -210,22 +225,25 @@ export default class UploadCreate extends React.Component {
                                             <div class="card-footer">
                                                 <div class="d-flex">
                                                     <a href="/#/meetings" class="btn btn-link">{t['cancel']}</a>
-                                                    <button onClick={() => this.submit()} class="btn btn-primary ms-auto">{t['submit']}</button>
+                                                    <button id='submit-button' onClick={() => this.submit()} class="btn btn-primary ms-auto">
+                                                        {t['submit']}
+                                                    </button>
+                                                    <div id='submit-spinner' class="spinner-border text-red ms-auto" role="status" style={{ display: 'none' }}></div>
                                                 </div>
                                             </div>
                                             <div class="progress progress-sm card-progress">
-                                                <div class="progress-bar" style={{ width: "100%" }} role="progressbar" aria-valuenow="38" aria-valuemin="0" aria-valuemax="100">
+                                                <div class="progress-bar" style={{ width: this.state.progress + "%" }} role="progressbar" aria-valuenow="38" aria-valuemin="0" aria-valuemax="100">
                                                     <span class="visually-hidden">38% Complete</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="col-4">
+                                    <div class="col-md-4">
                                         <div class="card">
                                             <div class="card-status-top bg-lime"></div>
                                             <div class="card-body">
-                                                <h3 class="card-title">Help</h3>
+                                                <h3 class="card-title"></h3>
                                                 <p></p>
                                             </div>
                                         </div>

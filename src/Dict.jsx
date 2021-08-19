@@ -31,6 +31,9 @@ export const dict = {
     'create_meeting_page':'ایجاد نشست',
     'online_external': 'برخط بیرونی',
     'filter_meetings': 'جستجو و فیلتر نشست ها',
+    'service_type':'نوع سرویس جلسات',
+    'internal':'درون سامانه',
+    'bigblue':'بیگ بلو باتن',
     
 
     'exhibition_info':'شرح',
@@ -90,6 +93,13 @@ export const dict = {
     'enter_bigblue_room':'ورود به اتاق تعامل',
     '':'',
 
+    'file':'فایل',
+    'info': 'شرح',
+    'title': 'عنوان',
+    'the_following_should_not_be_empty': 'مقادیر زیر نمی تواند خالی باشد',
+    'error':'خطا',
+    'no_result_to_show':'موردی برای نمایش وجود ندارد',
+    'try_adjusting_your_search':'لطفا موارد جستجو رو مجددا بررسی کنید',
     'cas':'احراز هویت مرکزی',
     'more':'بیشتر',
     'date_from':'از تاریخ',

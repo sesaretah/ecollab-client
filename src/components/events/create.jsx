@@ -3,12 +3,17 @@ import ReactDOM from 'react-dom';
 import $ from 'jquery';
 import ModelStore from "../../stores/ModelStore";
 import * as MyActions from "../../actions/MyActions";
+import Validation from "../common/validation.jsx";
 import { dict } from '../../Dict';
 import { conf } from '../../conf';
 import Header from "../header/header.jsx";
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
 import moment from 'moment-jalaali'
 import DatePicker2 from 'react-datepicker2';
+import {
+  validateExistence
+} from "../common/validate.js";
+
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
 const t = dict['fa']
@@ -22,6 +27,9 @@ export default class EventCreate extends React.Component {
     this.setInstance = this.setInstance.bind(this);
     this.handleChange = this.handleChange.bind(this);
 
+    this.modal = React.createRef();
+    this.validateExistence = validateExistence.bind(this);
+
     this.state = {
       token: window.localStorage.getItem('token'),
       title: null,
@@ -33,6 +41,7 @@ export default class EventCreate extends React.Component {
       is_private: false,
       options: [],
       tags: [],
+      validationItems: [],
     }
 
   }
@@ -94,10 +103,14 @@ export default class EventCreate extends React.Component {
 
   submit() {
     var data = this.state
-    if (!this.state.editing) {
-      MyActions.setInstance('events', data, this.state.token);
-    } else {
-      MyActions.updateInstance('events', data, this.state.token);
+    if (this.validateExistence(['title', 'info'])) {
+      $('#submit-button').hide();
+      $('#submit-spinner').show();
+      if (!this.state.editing) {
+        MyActions.setInstance('events', data, this.state.token);
+      } else {
+        MyActions.updateInstance('events', data, this.state.token);
+      }
     }
   }
 
@@ -187,8 +200,9 @@ export default class EventCreate extends React.Component {
 
     return (
       <body className="antialiased">
+        <Validation items={this.state.validationItems} modal={this.modal} />
         <div className="wrapper">
-          <Header history={this.props.history}/>
+          <Header history={this.props.history} />
           <div className="page-wrapper">
             <div className="container-xl">
               <div className="page-header d-print-none">
@@ -218,6 +232,11 @@ export default class EventCreate extends React.Component {
                             <textarea onInput={(e) => { this.handleChange({ info: e.target.value }) }} class="form-control" id='content' name="example-textarea-input" rows="6" placeholder={t['write_something']} value={this.state.info}></textarea>
                           </div>
 
+                          <div class="mb-3 " id='tags' >
+                            <label class="form-label" >{t['tags']}</label>
+                            {this.tagShow()}
+                          </div>
+
                           <div class="mb-3">
                             <label class="form-label">{t['event_type']}</label>
                             <div class="form-selectgroup">
@@ -236,10 +255,7 @@ export default class EventCreate extends React.Component {
                             </div>
                           </div>
 
-                          <div class="mb-3 " id='tags' >
-                            <label class="form-label" >{t['tags']}</label>
-                            {this.tagShow()}
-                          </div>
+
 
                           <div class="mb-3">
                             <label class="form-label">{t['meeting_start_time']}<span class="form-label-description"></span></label>
@@ -274,7 +290,8 @@ export default class EventCreate extends React.Component {
                       <div class="card-footer">
                         <div class="d-flex">
                           <a href="/#/events" class="btn btn-link">{t['cancel']}</a>
-                          <button onClick={() => this.submit()} class="btn btn-primary ms-auto">{t['submit']}</button>
+                          <button id='submit-button' onClick={() => this.submit()} class="btn btn-primary ms-auto">{t['submit']}</button>
+                          <div id='submit-spinner' class="spinner-border text-red ms-auto" role="status" style={{ display: 'none' }}></div>
                         </div>
                       </div>
                       <div class="progress progress-sm card-progress">
@@ -285,13 +302,12 @@ export default class EventCreate extends React.Component {
                     </div>
                   </div>
 
-                  <div class="col-4">
+                  <div class="col-md-8">
                     <div class="card">
                       <div class="card-status-top bg-lime"></div>
                       <div class="card-body">
-                        <h3 class="card-title">Help</h3>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam deleniti fugit incidunt, iste, itaque minima
-                          neque pariatur perferendis sed suscipit velit vitae voluptatem.</p>
+                        <h3 class="card-title"></h3>
+                        <p></p>
                       </div>
                     </div>
                   </div>

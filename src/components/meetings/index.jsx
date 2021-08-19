@@ -33,6 +33,7 @@ export default class MeetingIndex extends React.Component {
             tags: [],
             page: 1,
             event_id: 0,
+            pages: 0,
         }
 
     }
@@ -70,12 +71,14 @@ export default class MeetingIndex extends React.Component {
                         meetings: this.state.meetings.concat(list),
                     });
                 }
-                this.setState({ page: list[0].page })
+                this.setState({ page: list[0].page, pages: list[0].pages })
             } else {
                 this.setState({
                     meetings: [],
+                    pages: 0,
                 });
             }
+            console.log(list)
         }
         if (list && klass === 'Event') {
             this.setState({
@@ -108,24 +111,19 @@ export default class MeetingIndex extends React.Component {
     }
 
     noMeetingCard() {
-        <div class="col-12">
-            <div class="card">
-                <div class="empty">
-                    <div class="empty-img"><img src="./static/illustrations/undraw_quitting_time_dm8t.svg" height="128" alt="" />
-                    </div>
-                    <p class="empty-title">No results found</p>
-                    <p class="empty-subtitle text-muted">
-                        Try adjusting your search or filter to find what you're looking for.
-                    </p>
-                    <div class="empty-action">
-                        <a href="/#/meetings/create" class="btn btn-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="3" y1="4" x2="21" y2="4" /><path d="M4 4v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-10" /><line x1="12" y1="16" x2="12" y2="20" /><line x1="9" y1="20" x2="15" y2="20" /><path d="M8 12l3 -3l2 2l3 -3" /></svg>
-                            Create a meeting
-                        </a>
-                    </div>
+        return(
+        <div class="card">
+            <div class="empty">
+                <div class="empty-img">
+                <div className="demo-icon-preview"><svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M12 9v2m0 4v.01"></path><path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75"></path></svg></div>
                 </div>
+                <p class="empty-title">{t['no_result_to_show']}</p>
+                <p class="empty-subtitle text-muted">
+                    {t['try_adjusting_your_search']}
+                </p>
             </div>
         </div>
+        )
     }
 
     checkMeeting() {
@@ -137,18 +135,26 @@ export default class MeetingIndex extends React.Component {
     }
 
     cardMasonry() {
+        var result = []
         if (this.state.meetings) {
-            return (
-                <div class='row row-cards' data-masonry='{"percentPosition": true }' >
-                    <MeetingMasonry meetings={this.state.meetings} col={6} attend={this.attend} />
-                </div>
-            )
+            if (this.state.meetings.length !== 0) {
+                result.push(
+                    <div class='row row-cards' data-masonry='{"percentPosition": true }' >
+                        <MeetingMasonry meetings={this.state.meetings} col={6} attend={this.attend} />
+                    </div>
+                )
+            }
+            if (this.state.meetings.length === 0) {
+                result.push(this.noMeetingCard())
+            }
         }
+
+        return result
     }
 
     search() {
         $('#search-spinner').show();
-        var data = { q: this.state.q,event_id: this.state.event_id, start_from: this.state.start_from, start_to: this.state.start_to, tags: this.state.tags }
+        var data = { q: this.state.q, event_id: this.state.event_id, start_from: this.state.start_from, start_to: this.state.start_to, tags: this.state.tags }
         MyActions.getList('meetings/search', this.state.page, data, this.state.token);
         this.setState({ page: 1 })
     }
@@ -228,7 +234,7 @@ export default class MeetingIndex extends React.Component {
         var result = []
         if (this.state.events) {
             var options = [<option value=''></option>]
-            
+
             this.state.events.map((event) => {
                 options.push(
                     <option value={event.id}>{event.title}</option>
@@ -242,6 +248,19 @@ export default class MeetingIndex extends React.Component {
 
         }
         return result
+    }
+
+    moreBtn() {
+        if (this.state.pages > this.state.page) {
+            return (
+                <div class="hr-text">
+                    <a onClick={() => this.loadMore()}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><circle cx="12" cy="12" r="9" /><line x1="8" y1="12" x2="12" y2="16" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="16" y1="12" x2="12" y2="16" /></svg>
+                        {t['more']}
+                    </a>
+                </div>
+            )
+        }
     }
 
 
@@ -261,7 +280,7 @@ export default class MeetingIndex extends React.Component {
                                     </div>
                                     <div class="col-auto ms-auto d-print-none">
                                         <div class="btn-list">
-                                            <a href={"/#/events/create"} class="btn btn-primary"  >
+                                            <a href={"/#/meetings/create"} class="btn btn-primary"  >
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                                 {t['create_meeting']}
                                             </a>
@@ -331,12 +350,7 @@ export default class MeetingIndex extends React.Component {
                                     </div>
                                     <div class="col-lg-9">
                                         {this.cardMasonry()}
-                                        <div class="hr-text">
-                                            <a onClick={() => this.loadMore()}>
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><circle cx="12" cy="12" r="9" /><line x1="8" y1="12" x2="12" y2="16" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="16" y1="12" x2="12" y2="16" /></svg>
-                                                {t['more']}
-                                            </a>
-                                        </div>
+                                        {this.moreBtn()}
                                     </div>
                                 </div>
                             </div>

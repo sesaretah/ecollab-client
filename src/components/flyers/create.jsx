@@ -4,11 +4,15 @@ import * as MyActions from "../../actions/MyActions";
 import $ from 'jquery';
 import { dict } from '../../Dict';
 import Header from "../header/header.jsx";
+import Validation from "../common/validation.jsx";
 import { conf } from '../../conf';
 import queryString from 'query-string'
 import Quill from 'quill';
 import ImageUploader from "quill-image-uploader";
 import axios, { put } from 'axios';
+import {
+    validateExistence
+} from "../common/validate.js";
 
 const server = conf.server;
 
@@ -19,6 +23,9 @@ export default class FlyerCreate extends React.Component {
         this.getInstance = this.getInstance.bind(this);
         this.setInstance = this.setInstance.bind(this);
         this.handleChange = this.handleChange.bind(this);
+
+        this.modal = React.createRef();
+        this.validateExistence = validateExistence.bind(this);
 
         this.state = {
             token: window.localStorage.getItem('token'),
@@ -31,6 +38,7 @@ export default class FlyerCreate extends React.Component {
             quill_content: {},
             editing: false,
             is_default: false,
+            validationItems: [],
         }
 
     }
@@ -66,13 +74,13 @@ export default class FlyerCreate extends React.Component {
         var toolbarOptions = [
             ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
             [{ 'list': 'ordered' }, { 'list': 'bullet' }],      // superscript/subscript
-            [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
+            [{ 'indent': '-1' }, { 'indent': '+1' }],          // outdent/indent
             [{ 'direction': 'ltr' }, { 'direction': 'rtl' }],                         // text direction
             ['image'],
             ['video'],
             [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
             [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
-            [{ 'align': [] }],          
+            [{ 'align': [] }],
         ];
         Quill.register("modules/imageUploader", ImageUploader);
         var quillOne = new Quill('#editor-one', {
@@ -127,7 +135,7 @@ export default class FlyerCreate extends React.Component {
         var klass = ModelStore.getKlass()
         var model = ModelStore.getIntance()
         if (klass === 'Flyer') {
-            this.props.history.push('/'+model.advertisable_link)
+            this.props.history.push('/' + model.advertisable_link)
         }
     }
 
@@ -149,7 +157,7 @@ export default class FlyerCreate extends React.Component {
                 this.state.quill.setContents(this.state.quill_content)
             })
         }
-        
+
     }
 
     submit() {
@@ -160,12 +168,16 @@ export default class FlyerCreate extends React.Component {
             advertisable_type: this.state.advertisable_type,
             advertisable_id: this.state.advertisable_id,
             quill_content: this.state.quill_content,
-            is_default:  this.state.is_default,
+            is_default: this.state.is_default,
         }
-        if (!this.state.editing) {
-            MyActions.setInstance('flyers', data, this.state.token);
-        } else {
-            MyActions.updateInstance('flyers', data, this.state.token);
+        if (this.validateExistence(['title'])) {
+            $('#submit-button').hide();
+            $('#submit-spinner').show();
+            if (!this.state.editing) {
+                MyActions.setInstance('flyers', data, this.state.token);
+            } else {
+                MyActions.updateInstance('flyers', data, this.state.token);
+            }
         }
 
     }
@@ -173,21 +185,22 @@ export default class FlyerCreate extends React.Component {
     changeDefault(e) {
         console.log(e)
         var self = this;
-        if(this.state.is_default){
-            this.setState({is_default: false})
+        if (this.state.is_default) {
+            this.setState({ is_default: false })
         } else {
-            this.setState({is_default: true})
+            this.setState({ is_default: true })
         }
-      }
+    }
 
 
     render() {
-        const { is_default} = this.state;
+        const { is_default } = this.state;
         const t = dict['fa'];
         return (
             <body className="antialiased">
+                <Validation items={this.state.validationItems} modal={this.modal}/>
                 <div className="wrapper">
-                    <Header history={this.props.history}/>
+                    <Header history={this.props.history} />
                     <div className="page-wrapper">
                         <div className="container-xl">
                             <div className="page-header d-print-none">
@@ -219,7 +232,7 @@ export default class FlyerCreate extends React.Component {
                                                     <div class="mb-3">
                                                         <div class="form-label">{t['default_page']}</div>
                                                         <label class="form-check form-switch">
-                                                            <input class="form-check-input" type="checkbox" onClick={(e) => this.changeDefault(e.target.value)} checked={is_default? true : false}/>
+                                                            <input class="form-check-input" type="checkbox" onClick={(e) => this.changeDefault(e.target.value)} checked={is_default ? true : false} />
                                                             <span class="form-check-label">{t['default_page_info']}</span>
                                                         </label>
                                                     </div>
@@ -232,7 +245,8 @@ export default class FlyerCreate extends React.Component {
                                             <div class="card-footer">
                                                 <div class="d-flex">
                                                     <a href="/#/meetings" class="btn btn-link">{t['cancel']}</a>
-                                                    <button onClick={() => this.submit()} class="btn btn-primary ms-auto">{t['submit']}</button>
+                                                    <button id='submit-button' onClick={() => this.submit()} class="btn btn-primary ms-auto">{t['submit']}</button>
+                                                    <div id='submit-spinner' class="spinner-border text-red ms-auto" role="status" style={{ display: 'none' }}></div>
                                                 </div>
                                             </div>
                                             <div class="progress progress-sm card-progress">
@@ -243,11 +257,11 @@ export default class FlyerCreate extends React.Component {
                                         </div>
                                     </div>
 
-                                    <div class="col-4">
+                                    <div class="col-md-4">
                                         <div class="card">
                                             <div class="card-status-top bg-lime"></div>
                                             <div class="card-body">
-                                                <h3 class="card-title">Help</h3>
+                                                <h3 class="card-title"></h3>
                                                 <p></p>
                                             </div>
                                         </div>

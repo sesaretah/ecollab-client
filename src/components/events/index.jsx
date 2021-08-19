@@ -22,7 +22,7 @@ export default class EventIndex extends React.Component {
         this.handleChange = this.handleChange.bind(this);
         this.attend = this.attend.bind(this);
         this.setInstance = this.setInstance.bind(this);
-        
+
 
 
         this.state = {
@@ -35,6 +35,7 @@ export default class EventIndex extends React.Component {
             start_to: moment().add(2, 'jMonth'),
             tags: [],
             page: 1,
+            pages: 0
         }
 
     }
@@ -71,10 +72,11 @@ export default class EventIndex extends React.Component {
                         events: this.state.events.concat(list),
                     });
                 }
-                this.setState({ page: list[0].page })
+                this.setState({ page: list[0].page, pages: list[0].pages })
             } else {
                 this.setState({
                     events: [],
+                    pages: 0
                 });
             }
             console.log(list)
@@ -93,13 +95,13 @@ export default class EventIndex extends React.Component {
             var self = this;
             var events = self.state.events;
             if (events.length > 0) {
-              for (let i = 0; i < events.length; i++) {
-                if (events[i].id == model.id) {
-                  let newState = Object.assign({}, self.state);
-                  newState.events[i] = model;
-                  self.setState(newState, () => console.log(self.state.events));
+                for (let i = 0; i < events.length; i++) {
+                    if (events[i].id == model.id) {
+                        let newState = Object.assign({}, self.state);
+                        newState.events[i] = model;
+                        self.setState(newState, () => console.log(self.state.events));
+                    }
                 }
-              }
             }
             console.log(model)
         }
@@ -113,25 +115,21 @@ export default class EventIndex extends React.Component {
 
 
     noEventCard() {
-        <div class="col-12">
+        return (
             <div class="card">
                 <div class="empty">
-                    <div class="empty-img"><img src="./static/illustrations/undraw_quitting_time_dm8t.svg" height="128" alt="" />
+                    <div class="empty-img">
+                        <div className="demo-icon-preview"><svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M12 9v2m0 4v.01"></path><path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75"></path></svg></div>
                     </div>
-                    <p class="empty-title">No results found</p>
+                    <p class="empty-title">{t['no_result_to_show']}</p>
                     <p class="empty-subtitle text-muted">
-                        Try adjusting your search or filter to find what you're looking for.
+                        {t['try_adjusting_your_search']}
                     </p>
-                    <div class="empty-action">
-                        <a href="/#/events/create" class="btn btn-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><rect x="4" y="5" width="16" height="16" rx="2" /><line x1="16" y1="3" x2="16" y2="7" /><line x1="8" y1="3" x2="8" y2="7" /><line x1="4" y1="11" x2="20" y2="11" /><line x1="10" y1="16" x2="14" y2="16" /><line x1="12" y1="14" x2="12" y2="18" /></svg>
-                            Create an event
-                        </a>
-                    </div>
                 </div>
             </div>
-        </div>
+        )
     }
+
 
     checkEvent() {
         if (this.state.events) {
@@ -166,13 +164,20 @@ export default class EventIndex extends React.Component {
     }
 
     cardMasonry() {
+        var result = []
         if (this.state.events) {
-            return (
-                <div class='row row-cards' data-masonry='{"percentPosition": true }' >
-                    <EventCard events={this.state.events} col={6} attend={this.attend}/>
-                </div>
-            )
+            if (this.state.events.length !== 0) {
+                result.push(
+                    <div class='row row-cards' data-masonry='{"percentPosition": true }' >
+                        <EventCard events={this.state.events} col={6} attend={this.attend} />
+                    </div>
+                )
+            }
+            if (this.state.events.length === 0) {
+                result.push(this.noEventCard())
+            }
         }
+        return result
     }
 
     attend(flag, attendable_id) {
@@ -249,6 +254,19 @@ export default class EventIndex extends React.Component {
     loadMore() {
         var data = { id: this.state.id, page: this.state.page + 1, q: this.state.q, start_from: this.state.start_from, start_to: this.state.start_to, tags: this.state.tags }
         MyActions.getList('events/search', this.state.page, data, this.state.token);
+    }
+
+    moreBtn() {
+        if (this.state.pages > this.state.page) {
+            return (
+                <div class="hr-text">
+                    <a onClick={() => this.loadMore()}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><circle cx="12" cy="12" r="9" /><line x1="8" y1="12" x2="12" y2="16" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="16" y1="12" x2="12" y2="16" /></svg>
+                        {t['more']}
+                    </a>
+                </div>
+            )
+        }
     }
 
 
@@ -334,12 +352,7 @@ export default class EventIndex extends React.Component {
                                     </div>
                                     <div class="col-lg-9">
                                         {this.cardMasonry()}
-                                        <div class="hr-text">
-                                            <a onClick={() => this.loadMore()}>
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><circle cx="12" cy="12" r="9" /><line x1="8" y1="12" x2="12" y2="16" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="16" y1="12" x2="12" y2="16" /></svg>
-                                                {t['more']}
-                                            </a>
-                                        </div>
+                                        {this.moreBtn()}
                                     </div>
                                 </div>
                             </div>

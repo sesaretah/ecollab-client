@@ -6,7 +6,12 @@ import * as MyActions from "../../actions/MyActions";
 import { dict } from '../../Dict';
 import { conf } from '../../conf';
 import Header from "../header/header.jsx";
+import Validation from "../common/validation.jsx";
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
+import {
+  validateExistence
+} from "../common/validate.js";
+
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
 const t = dict['fa']
@@ -20,6 +25,10 @@ export default class ExhibitionCreate extends React.Component {
     this.setInstance = this.setInstance.bind(this);
     this.handleChange = this.handleChange.bind(this);
 
+
+    this.modal = React.createRef();
+    this.validateExistence = validateExistence.bind(this);
+
     this.state = {
       token: window.localStorage.getItem('token'),
       title: null,
@@ -27,6 +36,7 @@ export default class ExhibitionCreate extends React.Component {
       info: null,
       options: [],
       tags: [],
+      validationItems: [],
     }
 
   }
@@ -83,10 +93,14 @@ export default class ExhibitionCreate extends React.Component {
 
   submit() {
     var data = this.state
-    if (!this.state.editing) {
-      MyActions.setInstance('exhibitions', data, this.state.token);
-    } else {
-      MyActions.updateInstance('exhibitions', data, this.state.token);
+    if (this.validateExistence(['title', 'info'])) {
+      $('#submit-button').hide();
+      $('#submit-spinner').show();
+      if (!this.state.editing) {
+        MyActions.setInstance('exhibitions', data, this.state.token);
+      } else {
+        MyActions.updateInstance('exhibitions', data, this.state.token);
+      }
     }
   }
 
@@ -146,22 +160,23 @@ export default class ExhibitionCreate extends React.Component {
 
 
   changeDefault(e) {
-    if(this.state.is_private){
-        this.setState({is_private: false})
+    if (this.state.is_private) {
+      this.setState({ is_private: false })
     } else {
-        this.setState({is_private: true})
+      this.setState({ is_private: true })
     }
   }
 
 
 
   render() {
-    const { is_private} = this.state;
-    
+    const { is_private } = this.state;
+
     return (
       <body className="antialiased">
+        <Validation items={this.state.validationItems} modal={this.modal} />
         <div className="wrapper">
-          <Header history={this.props.history}/>
+          <Header history={this.props.history} />
           <div className="page-wrapper">
             <div className="container-xl">
               <div className="page-header d-print-none">
@@ -196,14 +211,13 @@ export default class ExhibitionCreate extends React.Component {
                             <label class="form-label" >{t['tags']}</label>
                             {this.tagShow()}
                           </div>
-
-
                         </form>
                       </div>
                       <div class="card-footer">
                         <div class="d-flex">
                           <a href="/#/exhibitions" class="btn btn-link">{t['cancel']}</a>
-                          <button onClick={() => this.submit()} class="btn btn-primary ms-auto">{t['submit']}</button>
+                          <button id='submit-button' onClick={() => this.submit()} class="btn btn-primary ms-auto">{t['submit']}</button>
+                          <div id='submit-spinner' class="spinner-border text-red ms-auto" role="status" style={{ display: 'none' }}></div>
                         </div>
                       </div>
                       <div class="progress progress-sm card-progress">
@@ -214,13 +228,12 @@ export default class ExhibitionCreate extends React.Component {
                     </div>
                   </div>
 
-                  <div class="col-4">
+                  <div class="col-md-8">
                     <div class="card">
                       <div class="card-status-top bg-lime"></div>
                       <div class="card-body">
-                        <h3 class="card-title">Help</h3>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aperiam deleniti fugit incidunt, iste, itaque minima
-                          neque pariatur perferendis sed suscipit velit vitae voluptatem.</p>
+                        <h3 class="card-title"></h3>
+                        <p></p>
                       </div>
                     </div>
                   </div>

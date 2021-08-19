@@ -133,7 +133,9 @@ export default class MeetingShow extends React.Component {
         roomId: model.room_uuid,
         cover: model.cover,
         uploads: model.uploads,
-        is_admin: model.is_admin
+        is_admin: model.is_admin,
+        bigblue: model.bigblue,
+        internal: model.internal,
       }, () => {
         if (this.state.token && this.state.token.length > 10) {
           MyActions.setInstance('users/validate_token', {}, this.state.token);
@@ -146,7 +148,7 @@ export default class MeetingShow extends React.Component {
     if (klass === 'MeetingUrl') {
       //this.setState({ bigBlueUrl: model.url})
       console.log(model)
-      if(model.url){
+      if (model.url) {
         console.log(model.url)
         $('#bigblue-spinner').hide();
         window.location.replace(model.url)
@@ -233,7 +235,7 @@ export default class MeetingShow extends React.Component {
 
 
   loadContent(quill_content) {
-   // console.log('44444')
+    // console.log('44444')
     //$('#content').html();
     // this.state.quillOne.setContents(quill_content)
     this.setState({ quill_content: quill_content })
@@ -275,11 +277,16 @@ export default class MeetingShow extends React.Component {
     }
   }
 
+  deleteUpload(id) {
+    var data = { id: id }
+    MyActions.removeInstance('uploads', data, this.state.token);
+  }
+
   editUploadBtn(upload) {
     if (this.state.is_admin) {
       return (
         <div class="col-auto p-0">
-          <a onClick={() => this.deleteFlyer(upload.id)} class="list-group-item-actions show">
+          <a onClick={() => this.deleteUpload(upload.id)} class="list-group-item-actions show">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="4" y1="7" x2="20" y2="7" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
           </a>
         </div>
@@ -296,7 +303,7 @@ export default class MeetingShow extends React.Component {
             <div class="list-group-item">
               <div class="row align-items-center">
                 <div class="col text-truncate">
-                  <a style={{ cursor: 'pointer' }} href={upload.link} class="text-body d-block">{upload.title}</a>
+                  <a style={{ cursor: 'pointer' }} href={upload.link} target='_blank' class="text-body d-block">{upload.title}</a>
                 </div>
                 {this.editUploadBtn(upload)}
               </div>
@@ -350,9 +357,29 @@ export default class MeetingShow extends React.Component {
     }
   }
 
-  createBigBlue(){
+  createBigBlue() {
     $('#bigblue-spinner').show();
     MyActions.getInstance('meetings/join_bigblue', this.props.match.params.id, this.state.token);
+  }
+
+  roomBtn() {
+    var result = []
+    if (this.state.internal) {
+      result.push(
+        <a href={"/#/rooms/" + this.state.room_id + "?rnd=" + uuidv4()} onClick={this.forceUpdate} class="btn bg-green-lt">
+          {t['enter_room']}
+        </a>
+      )
+    }
+    if (this.state.bigblue) {
+      result.push(
+        <a onClick={() => this.createBigBlue()} class="btn bg-cyan-lt ms-auto">
+          {t['enter_bigblue_room']}
+          <div id='bigblue-spinner' class="spinner-border text-black" role="status" style={{ display: 'none' }}></div>
+        </a>
+      )
+    }
+    return result
   }
 
 
@@ -440,13 +467,7 @@ export default class MeetingShow extends React.Component {
                           </div>
                           <div class="card-footer">
                             <div class="d-flex">
-                              <a href={"/#/rooms/" + this.state.room_id + "?rnd=" + uuidv4()} onClick={this.forceUpdate} class="btn bg-green-lt">
-                                {t['enter_room']}
-                              </a>
-                              <a onClick={() => this.createBigBlue()} class="btn bg-cyan-lt ms-auto">
-                                {t['enter_bigblue_room']}
-                                <div id='bigblue-spinner' class="spinner-border text-black" role="status" style={{ display: 'none' }}></div>
-                              </a>
+                              {this.roomBtn()}
                             </div>
                           </div>
                         </div>

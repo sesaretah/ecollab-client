@@ -5,12 +5,17 @@ import $ from 'jquery';
 import { dict } from '../../Dict';
 import { conf } from '../../conf';
 import Header from "../header/header.jsx";
+import Validation from "../common/validation.jsx";
 import DatePicker from "react-datepicker";
 import queryString from 'query-string'
 import RangeSlider from 'react-bootstrap-range-slider';
 import moment from 'moment-jalaali'
 import DatePicker2 from 'react-datepicker2';
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
+import {
+  validateExistence
+} from "../common/validate.js";
+
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
 const t = dict['fa']
@@ -23,21 +28,27 @@ export default class MeetingCreate extends React.Component {
     this.setInstance = this.setInstance.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.getList = this.getList.bind(this);
+    
+    this.modal = React.createRef();
+    this.validateExistence = validateExistence.bind(this);
 
     this.state = {
       token: window.localStorage.getItem('token'),
       title: null,
       info: null,
       meeting_type: 'online',
-      start_time: Date.now(),
-      end_time: Date.now(),
+      start_time: moment(),
+      end_time: moment().add(2, 'hour'),
       event_id: null,
       capacity: 20,
       editing: false,
       options: [],
       tags: [],
       is_private: false,
-      events: []
+      events: [],
+      bigblue: true,
+      internal: false,
+      validationItems: [],
     }
 
   }
@@ -56,11 +67,12 @@ export default class MeetingCreate extends React.Component {
 
   componentDidMount() {
     const value = queryString.parse(this.props.location.search);
-    this.setState({ event_id: value.event_id }, () => console.log(this.state.event_id))
+    this.setState({ event_id: value.event_id })
     if (this.props.match.params.id) {
       MyActions.getInstance('meetings', this.props.match.params.id, this.state.token);
     }
     MyActions.getList('events/owner', this.state.page, {}, this.state.token);
+
   }
 
 
@@ -101,6 +113,8 @@ export default class MeetingCreate extends React.Component {
         capacity: model.capacity,
         tags: model.tags,
         is_private: model.is_private,
+        bigblue: model.bigblue,
+        internal: model.internal,
         editing: true,
       }, () => {
         console.log(this.state)
@@ -112,27 +126,35 @@ export default class MeetingCreate extends React.Component {
 
   submit() {
     var data = this.state
-    if (!this.state.editing) {
-      MyActions.setInstance('meetings', data, this.state.token);
-    } else {
-      MyActions.updateInstance('meetings', data, this.state.token);
+    if(this.validateExistence(['title', 'info'])){
+      $('#submit-button').hide();
+      $('#submit-spinner').show();
+      if (!this.state.editing) {
+        MyActions.setInstance('meetings', data, this.state.token);
+      } else {
+        MyActions.updateInstance('meetings', data, this.state.token);
+      }
     }
+
   }
 
+
+
   changeType(e) {
-    var self = this;
-    $('.form-selectgroup-input').each(function () {
-      if ($(this).val() !== e) {
-        $(this).prop("checked", false)
-      } else {
-        if ($(this).checked) {
-          $(this).prop("checked", false)
-        } else {
-          $(this).prop("checked", true)
-          self.setState({ meeting_type: e })
-        }
-      }
-    })
+    this.setState({ meeting_type: e })
+    this.modal.current.click();
+  }
+
+  changeService(e) {
+    this.toggleState(e)
+  }
+
+  toggleState(s) {
+    if (this.state[s]) {
+      this.setState({ [`${s}`]: false })
+    } else {
+      this.setState({ [`${s}`]: true }, () => console.log(this.state))
+    }
   }
 
   tagSelected(tags) {
@@ -209,7 +231,6 @@ export default class MeetingCreate extends React.Component {
       var options = [<option value=''></option>]
 
       this.state.events.map((event) => {
-        console.log(event)
         options.push(
           <option value={event.id} selected={this.state.event_id == event.id ? true : false}>{event.title}</option>
         )
@@ -229,6 +250,7 @@ export default class MeetingCreate extends React.Component {
     const { is_private } = this.state;
     return (
       <body className="antialiased">
+        <Validation items={this.state.validationItems} modal={this.modal}/>
         <div className="wrapper">
           <Header history={this.props.history} />
           <div className="page-wrapper">
@@ -269,22 +291,44 @@ export default class MeetingCreate extends React.Component {
                             <label class="form-label">{t['meeting_type']}</label>
                             <div class="form-selectgroup">
                               <label class="form-selectgroup-item">
-                                <input type="checkbox" name="name" value="in_person" class="form-selectgroup-input" checked="" onClick={(e) => this.changeType(e.target.value)} />
+                                <input type="checkbox" name="name" value="in_person" class="form-selectgroup-input" checked={this.state.meeting_type === 'in_person' ? true : false} onClick={(e) => this.changeType(e.target.value)} />
                                 <span class="form-selectgroup-label">{t['in_person']}</span>
                               </label>
                               <label class="form-selectgroup-item">
-                                <input type="checkbox" name="name" value="hybrid" class="form-selectgroup-input" onClick={(e) => this.changeType(e.target.value)} />
+                                <input type="checkbox" name="name" value="hybrid" class="form-selectgroup-input" checked={this.state.meeting_type === 'hybrid' ? true : false} onClick={(e) => this.changeType(e.target.value)} />
                                 <span class="form-selectgroup-label">{t['hybrid']}</span>
                               </label>
                               <label class="form-selectgroup-item">
-                                <input type="checkbox" name="name" value="online" class="form-selectgroup-input" onClick={(e) => this.changeType(e.target.value)} />
+                                <input type="checkbox" name="name" value="online" class="form-selectgroup-input" checked={this.state.meeting_type === 'online' ? true : false} onClick={(e) => this.changeType(e.target.value)} />
                                 <span class="form-selectgroup-label">{t['online']}</span>
                               </label>
                               <label class="form-selectgroup-item">
-                                <input type="checkbox" name="name" value="online_external" class="form-selectgroup-input" onClick={(e) => this.changeType(e.target.value)} />
+                                <input type="checkbox" name="name" value="online_external" class="form-selectgroup-input" checked={this.state.meeting_type === 'online_external' ? true : false} onClick={(e) => this.changeType(e.target.value)} />
                                 <span class="form-selectgroup-label">{t['online_external']}</span>
                               </label>
                             </div>
+                          </div>
+
+
+                          <div class="mb-3">
+                            <label class="form-label">{t['service_type']}</label>
+                            <div class="form-selectgroup">
+                              <label class="form-selectgroup-item">
+                                <input type="checkbox" name="name" value="internal" class="form-selectgroup-input" checked={this.state.internal ? true : false} onClick={(e) => this.changeService(e.target.value)} />
+                                <span class="form-selectgroup-label">{t['internal']}</span>
+                              </label>
+                              <label class="form-selectgroup-item">
+                                <input type="checkbox" name="name" value="bigblue" class="form-selectgroup-input" checked={this.state.bigblue ? true : false} onClick={(e) => this.changeService(e.target.value)} />
+                                <span class="form-selectgroup-label">{t['bigblue']}</span>
+                              </label>
+                            </div>
+                          </div>
+
+
+
+                          <div class="mb-3 " id='tags' >
+                            <label class="form-label" >{t['tags']}</label>
+                            {this.tagShow()}
                           </div>
 
                           <div class="mb-3">
@@ -293,11 +337,6 @@ export default class MeetingCreate extends React.Component {
                               value={this.state.capacity}
                               onChange={(e) => { this.handleChange({ capacity: e.target.value }) }}
                             />
-                          </div>
-
-                          <div class="mb-3 " id='tags' >
-                            <label class="form-label" >{t['tags']}</label>
-                            {this.tagShow()}
                           </div>
 
 
@@ -336,7 +375,8 @@ export default class MeetingCreate extends React.Component {
                       <div class="card-footer">
                         <div class="d-flex">
                           <a href="/#/meetings" class="btn btn-link">{t['cancel']}</a>
-                          <button onClick={() => this.submit()} class="btn btn-primary ms-auto">{t['submit']}</button>
+                          <button id='submit-button' onClick={() => this.submit()} class="btn btn-primary ms-auto">{t['submit']}</button>
+                          <div id='submit-spinner' class="spinner-border text-red ms-auto" role="status" style={{ display: 'none' }}></div>
                         </div>
                       </div>
                       <div class="progress progress-sm card-progress">
@@ -347,11 +387,11 @@ export default class MeetingCreate extends React.Component {
                     </div>
                   </div>
 
-                  <div class="col-4">
+                  <div class="col-md-8">
                     <div class="card">
                       <div class="card-status-top bg-lime"></div>
                       <div class="card-body">
-                        <h3 class="card-title">Help</h3>
+                        <h3 class="card-title"></h3>
                         <p></p>
                       </div>
                     </div>

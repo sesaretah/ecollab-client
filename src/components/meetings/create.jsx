@@ -28,6 +28,7 @@ export default class MeetingCreate extends React.Component {
     this.setInstance = this.setInstance.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.getList = this.getList.bind(this);
+    this.deleteInstance = this.deleteInstance.bind(this);
     
     this.modal = React.createRef();
     this.validateExistence = validateExistence.bind(this);
@@ -45,9 +46,11 @@ export default class MeetingCreate extends React.Component {
       options: [],
       tags: [],
       is_private: false,
+      is_admin: false,
       events: [],
       bigblue: true,
       internal: false,
+      sata: false,
       validationItems: [],
     }
 
@@ -57,12 +60,14 @@ export default class MeetingCreate extends React.Component {
     ModelStore.on("set_instance", this.setInstance);
     ModelStore.on("got_instance", this.getInstance);
     ModelStore.on("got_list", this.getList);
+    ModelStore.on("deleted_instance", this.deleteInstance);
   }
 
   componentWillUnmount() {
     ModelStore.removeListener("set_instance", this.setInstance);
     ModelStore.removeListener("got_instance", this.getInstance);
     ModelStore.removeListener("got_list", this.getList);
+    ModelStore.removeListener("deleted_instance", this.deleteInstance);
   }
 
   componentDidMount() {
@@ -78,6 +83,10 @@ export default class MeetingCreate extends React.Component {
 
   handleChange(obj) {
     this.setState(obj);
+  }
+
+  deleteInstance() {
+    this.props.history.push("/meetings/")
   }
 
   setInstance() {
@@ -115,11 +124,16 @@ export default class MeetingCreate extends React.Component {
         is_private: model.is_private,
         bigblue: model.bigblue,
         internal: model.internal,
+        sata: model.sata,
+        is_admin: model.is_admin,
         editing: true,
       }, () => {
         console.log(this.state)
         this.changeType(this.state.meeting_type)
         this.tagSelected(this.state.tags);
+        if(!this.state.is_admin){
+          this.props.history.push("/meetings/")
+        }
       })
     }
   }
@@ -135,14 +149,13 @@ export default class MeetingCreate extends React.Component {
         MyActions.updateInstance('meetings', data, this.state.token);
       }
     }
-
   }
 
 
 
   changeType(e) {
     this.setState({ meeting_type: e })
-    this.modal.current.click();
+   // this.modal.current.click();
   }
 
   changeService(e) {
@@ -245,6 +258,22 @@ export default class MeetingCreate extends React.Component {
     return result
   }
 
+  deleteMeeting() {
+    var data = { id: this.state.id }
+    MyActions.removeInstance('meetings', data, this.state.token);
+  }
+
+  deleteBtn() {
+    if (this.state.editing) {
+      return (
+        <button id='delete-button' onClick={() =>{ if (window.confirm(t['are_you_sure'])) this.deleteMeeting()}} class="btn btn-danger ms-auto">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="4" y1="7" x2="20" y2="7" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+          {t['delete']}
+        </button>
+      )
+    }
+  }
+
 
   render() {
     const { is_private } = this.state;
@@ -318,6 +347,10 @@ export default class MeetingCreate extends React.Component {
                                 <span class="form-selectgroup-label">{t['internal']}</span>
                               </label>
                               <label class="form-selectgroup-item">
+                                <input type="checkbox" name="name" value="sata" class="form-selectgroup-input" checked={this.state.sata ? true : false} onClick={(e) => this.changeService(e.target.value)} />
+                                <span class="form-selectgroup-label">{t['sata']}</span>
+                              </label>
+                              <label class="form-selectgroup-item">
                                 <input type="checkbox" name="name" value="bigblue" class="form-selectgroup-input" checked={this.state.bigblue ? true : false} onClick={(e) => this.changeService(e.target.value)} />
                                 <span class="form-selectgroup-label">{t['bigblue']}</span>
                               </label>
@@ -375,6 +408,7 @@ export default class MeetingCreate extends React.Component {
                       <div class="card-footer">
                         <div class="d-flex">
                           <a href="/#/meetings" class="btn btn-link">{t['cancel']}</a>
+                          {this.deleteBtn()}
                           <button id='submit-button' onClick={() => this.submit()} class="btn btn-primary ms-auto">{t['submit']}</button>
                           <div id='submit-spinner' class="spinner-border text-red ms-auto" role="status" style={{ display: 'none' }}></div>
                         </div>
@@ -387,7 +421,7 @@ export default class MeetingCreate extends React.Component {
                     </div>
                   </div>
 
-                  <div class="col-md-8">
+                  <div class="col-md-4">
                     <div class="card">
                       <div class="card-status-top bg-lime"></div>
                       <div class="card-body">

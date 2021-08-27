@@ -49,8 +49,13 @@ const EventCard = (props) => {
                 return (
                     <div className="card-footer" style={{ display: 'initial' }}>
                         <div class="d-flex">
-                            <a onClick={() => props.attend(false, event.id)} class="ms-auto">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M19.823 19.824a2 2 0 0 1 -1.823 1.176h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 1.175 -1.823m3.825 -.177h9a2 2 0 0 1 2 2v9" /><line x1="16" y1="3" x2="16" y2="7" /><line x1="8" y1="3" x2="8" y2="4" /><path d="M4 11h7m4 0h5" /><line x1="11" y1="15" x2="12" y2="15" /><line x1="12" y1="15" x2="12" y2="18" /><line x1="3" y1="3" x2="21" y2="21" /></svg>
+                            <a href={'/#/events/' + event.id} class="btn btn-facebook ms-auto mx-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><circle cx="12" cy="12" r="2" /><path d="M12 19c-4 0 -7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7c-.42 .736 -.858 1.414 -1.311 2.033" /><path d="M15 19l2 2l4 -4" /></svg>
+                                {t['view']}
+                            </a>
+                            <a onClick={() => props.attend(false, event.id)} class="btn btn-outline-secondary">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="mx-1" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><circle cx="12" cy="12" r="9" /><path d="M10 10l4 4m0 -4l-4 4" /></svg>
+                                {t['unregister']}
                             </a>
                         </div>
                     </div>
@@ -59,14 +64,29 @@ const EventCard = (props) => {
                 return (
                     <div className="card-footer" style={{ display: 'initial' }}>
                         <div class="d-flex">
-                            <a onClick={() => props.attend(true, event.id)} class="ms-auto">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><rect x="4" y="5" width="16" height="16" rx="2" /><line x1="16" y1="3" x2="16" y2="7" /><line x1="8" y1="3" x2="8" y2="7" /><line x1="4" y1="11" x2="20" y2="11" /><line x1="10" y1="16" x2="14" y2="16" /><line x1="12" y1="14" x2="12" y2="18" /></svg>
-
+                            <a onClick={() => props.attend(true, event.id)} class="btn bg-dark-lt ms-auto">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="mx-1" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><circle cx="12" cy="12" r="9" /><path d="M9 12l2 2l4 -4" /></svg>
+                                {t['register']}
                             </a>
                         </div>
                     </div>
                 )
             }
+        }
+    }
+
+
+    function eventLink(event) {
+        if (event.attending) {
+            return (
+                <a href={'/#/events/' + event.id}>
+                    {event.title}
+                </a>
+            )
+        } else {
+            return (
+                <span>{event.title}</span>
+            )
         }
     }
 
@@ -81,9 +101,7 @@ const EventCard = (props) => {
                             {cardCover(event)}
                             <div className="card-body">
                                 <h3 class="card-title">
-                                    <a href={'/#/events/' + event.id}>
-                                        {event.title}
-                                    </a>
+                                    {eventLink(event)}
                                 </h3>
                                 <p style={{ textAlign: 'justify' }}>
                                     {event.truncated_info}
@@ -94,17 +112,24 @@ const EventCard = (props) => {
                                     {t[event.event_type]}
                                 </div>
 
-
-
-                                <h4>{t['meeting_start_time']}:</h4>
-                                <div class="text-muted mb-3">
-                                    {moment(formatGregorianDate(event.start_date)).format('HH:mm jYYYY/jMM/jDD')}
+                                <div className="row">
+                                    <div className="col-md-6">
+                                        <h4>{t['meeting_start_time']}:</h4>
+                                        <div class="text-muted mb-3">
+                                            {moment(formatGregorianDate(event.start_date)).format('HH:mm jYYYY/jMM/jDD')}
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <h4>{t['meeting_end_time']}:</h4>
+                                        <div class="text-muted mb-3">
+                                            {moment(formatGregorianDate(event.end_date)).format('HH:mm YYYY/MM/DD')}
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <h4>{t['meeting_end_time']}:</h4>
-                                <div class="text-muted mb-3">
-                                    {moment(formatGregorianDate(event.end_date)).format('HH:mm YYYY/MM/DD')}
-                                </div>
+
+
+
 
                                 <h4>{t['tags']}</h4>
                                 <div class="text-muted mb-3">

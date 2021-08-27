@@ -10,7 +10,6 @@ const Validation = (props) => {
     function items() {
         var result = []
         if (props.items) {
-            console.log(props.items)
             props.items.map((item) => {
                 result.push(<li>{t[item]}</li>)
             })

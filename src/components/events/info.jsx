@@ -44,6 +44,7 @@ const EventInfo = (props) => {
 
     return (
         <div class="card mb-3">
+            <div class="card-status-top bg-teal"></div>
             <div className="card-header bg-dark-lt" >
                 <h3 class="card-title">{props.title} </h3>
                 <ul class="nav nav-pills card-header-pills">

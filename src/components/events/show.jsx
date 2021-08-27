@@ -360,6 +360,7 @@ export default class EventShow extends React.Component {
                     <MeetingCard meetings={this.state.meetings} col='12' id={this.state.id} is_admin={this.state.is_admin} />
 
                     <div class="card mb-3">
+                    <div class="card-status-top bg-indigo"></div>
                       <div class="card-header">
                         <h3 class="card-title">{t['pages']}</h3>
                         <ul class="nav nav-pills card-header-pills">
@@ -372,6 +373,7 @@ export default class EventShow extends React.Component {
                     </div>
 
                     <div class="card mb-3">
+                    <div class="card-status-top bg-muted"></div>
                       <div class="card-header">
                         <h3 class="card-title">{t['resources']}</h3>
                         <ul class="nav nav-pills card-header-pills">

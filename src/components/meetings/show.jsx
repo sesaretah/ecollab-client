@@ -10,8 +10,13 @@ import AttendanceCard from "../attendances/card.jsx";
 import moment from 'jalali-moment'
 import { socket } from '../../socket.js'
 import FlyerCard from "../flyers/card.jsx";
+import PollCard from "../polls/create.jsx";
+
 import {
-  socketHandle, appendChat, chatItems, throttle, send, wsSend, keydownHandler, scrollChat
+  isFirefox
+} from "react-device-detect";
+import {
+  appendChat, chatItems, throttle, send, wsSend, keydownHandler, scrollChat
 } from "../rooms/chat.js";
 
 moment.locale('fa', { useGregorianParser: true });
@@ -25,8 +30,9 @@ export default class MeetingShow extends React.Component {
     this.getInstance = this.getInstance.bind(this);
     this.setInstance = this.setInstance.bind(this);
     this.handleChange = this.handleChange.bind(this);
+    this.postPolling = this.postPolling.bind(this);
 
-    this.socketHandle = socketHandle.bind(this);
+    this.socketHandle = this.socketHandle.bind(this);
     this.appendChat = appendChat.bind(this);
     this.chatItems = chatItems.bind(this);
     this.throttle = throttle.bind(this);
@@ -34,6 +40,7 @@ export default class MeetingShow extends React.Component {
     this.wsSend = wsSend.bind(this);
     this.keydownHandler = keydownHandler.bind(this);
     this.scrollChat = scrollChat.bind(this);
+    this.getList = this.getList.bind(this);
 
     this.state = {
       token: window.localStorage.getItem('token'),
@@ -60,11 +67,21 @@ export default class MeetingShow extends React.Component {
       initials: null,
       userUUID: null,
 
+      userCounter: 0,
+
+      fullAlert: false,
+      timelyAlert: false,
+
+      attending: false,
+
       chats: [],
       lastTime: Date.now(),
       content: null,
       item: null,
       quill_content: null,
+
+      polls: null,
+      star: null,
     }
 
   }
@@ -75,24 +92,26 @@ export default class MeetingShow extends React.Component {
     ModelStore.on("set_instance", this.setInstance);
     ModelStore.on("got_instance", this.getInstance);
     ModelStore.on("deleted_instance", this.getInstance);
+    ModelStore.on("got_list", this.getList);
     document.addEventListener('keydown', this.keydownHandler);
   }
 
   componentWillUnmount() {
+    ModelStore.removeListener("got_list", this.getList);
     ModelStore.removeListener("got_instance", this.getInstance);
     ModelStore.removeListener("set_instance", this.setInstance);
     ModelStore.removeListener("deleted_instance", this.getInstance);
     document.removeEventListener('keydown', this.keydownHandler);
+    //socket.disconnect();
+    if(this.state.roomId && this.state.userUUID ) {
+      socket.emit('leaveRoomView', { room: this.state.roomId.toString(), uuid: this.state.userUUID });
+    }
+    
   }
 
   componentDidMount() {
     var self = this;
     MyActions.getInstance('meetings', this.props.match.params.id, this.state.token);
-    //var quillOne = new Quill('#editor-one', {
-    // readOnly: true,
-    //});
-    //this.setState({ quillOne: quillOne })
-
     socket.on('connect', function () {
       if (self.state.roomId) {
         socket.emit('room', { room: self.state.roomId.toString(), uuid: self.state.userUUID });
@@ -104,6 +123,34 @@ export default class MeetingShow extends React.Component {
         self.socketHandle(data)
       }
     });
+    MyActions.getList('polls', this.state.page, { pollable_type: 'Meeting', pollable_id: this.props.match.params.id }, this.state.token);
+  }
+
+  getList() {
+    var list = ModelStore.getList()
+    var klass = ModelStore.getKlass()
+
+    if (list && klass === 'Poll') {
+      this.setState({
+        polls: list,
+      });
+    }
+    console.log(list)
+  }
+
+
+  socketHandle(msg) {
+    var self = this;
+    var parsed = msg;
+    switch (parsed.type) {
+      case "chat":
+        self.appendChat(parsed.c);
+        break;
+      case "userCounter":
+        console.log(parsed.c)
+        self.setState({ userCounter: parsed.c });
+        break;
+    }
   }
 
 
@@ -136,37 +183,70 @@ export default class MeetingShow extends React.Component {
         is_admin: model.is_admin,
         bigblue: model.bigblue,
         internal: model.internal,
+        sata: model.sata,
+        attending: model.attending,
       }, () => {
+        if (!this.state.attending) {
+          window.location.replace('/#/meetings')
+        }
         if (this.state.token && this.state.token.length > 10) {
           MyActions.setInstance('users/validate_token', {}, this.state.token);
         }
-        if (this.state.flyers && this.state.flyers[0]) {
-          this.loadContent(this.state.flyers[0].quill_content)
+        if (this.state.flyers) {
+          this.state.flyers.map((flyer) => {
+            if (flyer.is_default) {
+              this.loadContent(flyer.quill_content)
+            }
+          })
+
         }
       })
     }
     if (klass === 'MeetingUrl') {
-      //this.setState({ bigBlueUrl: model.url})
-      console.log(model)
+
       if (model.url) {
-        console.log(model.url)
+        console.log(model)
         $('#bigblue-spinner').hide();
-        window.location.replace(model.url)
+        if (model.full && !this.state.is_admin) {
+          this.setState({ fullAlert: true })
+        }
+        if (!model.timely && !this.state.is_admin) {
+          this.setState({ timelyAlert: true })
+        }
+        if (this.state.is_admin) {
+          if (isFirefox){
+            window.location.replace(model.url)
+          } else {
+            window.open(model.url, '_blank')
+          }
+        }
+        if (!model.full && !this.state.is_admin && model.timely) {
+          if (isFirefox){
+            window.location.replace(model.url)
+          } else {
+            window.open(model.url, '_blank')
+          }
+        }
+
       }
-      //console.log(model.url)
     }
   }
 
   setInstance() {
     var self = this;
     var klass = ModelStore.getKlass()
-    var user = ModelStore.getIntance();
+    var model = ModelStore.getIntance();
     if (klass === 'Validate') {
-      this.setState({ name: user.name, fullname: user.name, initials: user.initials, userUUID: user.uuid }, () => {
+      console.log('validated')
+      this.setState({ name: model.name, fullname: model.name, initials: model.initials, userUUID: model.uuid }, () => {
         this.connectSocketRoom();
-        //console.log(self.state)
+
       });
     }
+    if (klass === 'Polling') {
+      this.setState({ polls: model.polls })
+    }
+    console.log(model)
   }
 
   sideBlock(item, title) {
@@ -205,14 +285,6 @@ export default class MeetingShow extends React.Component {
   flyers() {
     var result = []
     this.state.flyers.map((flyer) => {
-      if (flyer.is_default) {
-        //$('#content').html();
-        //this.state.quillOne.setContents(flyer.quill_content)
-        //this.setState({quill_content: flyer.quill_content})
-        // this.loadContent(flyer.quill_content)
-      }
-    })
-    this.state.flyers.map((flyer) => {
       result.push(
         <div class="list-group-item">
           <div class="row align-items-center">
@@ -235,9 +307,6 @@ export default class MeetingShow extends React.Component {
 
 
   loadContent(quill_content) {
-    // console.log('44444')
-    //$('#content').html();
-    // this.state.quillOne.setContents(quill_content)
     this.setState({ quill_content: quill_content })
   }
 
@@ -353,7 +422,8 @@ export default class MeetingShow extends React.Component {
 
   connectSocketRoom() {
     if (this.state.userUUID && this.state.roomId) {
-      socket.emit('room', { room: this.state.roomId, uuid: this.state.userUUID });
+      socket.emit('room', { room: this.state.roomId.toString(), uuid: this.state.userUUID });
+      socket.emit('setRoomView', { room: this.state.roomId.toString(), uuid: this.state.userUUID });
     }
   }
 
@@ -364,7 +434,7 @@ export default class MeetingShow extends React.Component {
 
   roomBtn() {
     var result = []
-    if (this.state.internal) {
+    if (this.state.internal || this.state.sata) {
       result.push(
         <a href={"/#/rooms/" + this.state.room_id + "?rnd=" + uuidv4()} onClick={this.forceUpdate} class="btn bg-green-lt">
           {t['enter_room']}
@@ -382,6 +452,71 @@ export default class MeetingShow extends React.Component {
     return result
   }
 
+
+  fullAlert() {
+    if (this.state.fullAlert) {
+      return (
+        <div class="alert alert-important alert-danger alert-dismissible" role="alert">
+          <div class="d-flex">
+            <div>
+            </div>
+            <div>
+              {t['room_is_full']}
+            </div>
+          </div>
+          <a class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="close"></a>
+        </div>
+      )
+    }
+  }
+
+
+  timelyAlert() {
+    if (this.state.timelyAlert) {
+      return (
+        <div class="alert alert-important alert-danger alert-dismissible" role="alert">
+          <div class="d-flex">
+            <div>
+            </div>
+            <div>
+              {t['out_of_time']}
+            </div>
+          </div>
+          <a class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="close"></a>
+        </div>
+      )
+    }
+  }
+
+
+  postPolling(id, value) {
+    var data = { poll_id: id, outcome: value }
+    MyActions.setInstance('pollings', data, this.state.token);
+  }
+
+  polls() {
+    var result = []
+    if (this.state.polls) {
+      this.state.polls.map((poll) => {
+        result.push(<PollCard postPolling={this.postPolling} star={this.state.star} handleChange={this.handleChange} poll={poll} />)
+      })
+    }
+    return result
+  }
+
+  pollSettings() {
+    if (this.state.is_admin) {
+      return (
+        <div style={{ backgroundColor: '#f4f6fa', minHeight: '25px', marginTop: '0px' }}>
+          <div className="col-auto">
+            <a href={'/#/polls?meeting_id=' + this.state.id}>
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon" style={{ float: 'left', marginTop: '3px', marginLeft: '5px' }} width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><circle cx="12" cy="12" r="3" /></svg>
+            </a>
+          </div>
+        </div>
+      )
+    }
+  }
 
   render() {
     const t = dict['fa']
@@ -406,6 +541,7 @@ export default class MeetingShow extends React.Component {
 
                   <div class="col-lg-4">
                     <div class="card mb-3">
+                      <div class="card-status-top bg-indigo"></div>
                       <div className="card-header bg-dark-lt" >
                         <h3 class="card-title">{this.state.title}</h3>
                         <ul class="nav nav-pills card-header-pills">
@@ -428,6 +564,15 @@ export default class MeetingShow extends React.Component {
                             {t['chats']}
                           </a>
                         </li>
+                        <li class="nav-item">
+                          <a href="#tabs-vote" class="nav-link" data-bs-toggle="tab">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3" /><line x1="12" y1="12" x2="20" y2="7.5" /><line x1="12" y1="12" x2="12" y2="21" /><line x1="12" y1="12" x2="4" y2="7.5" /></svg>
+                            {t['polls']}
+                          </a>
+                        </li>
+                        <span href="#" class="badge bg-teal ms-auto mt-2 mx-2">
+                          {t['viewers']} {this.state.userCounter}
+                        </span>
                       </ul>
 
 
@@ -471,6 +616,9 @@ export default class MeetingShow extends React.Component {
                             </div>
                           </div>
                         </div>
+                        {this.fullAlert()}
+                        {this.timelyAlert()}
+
                         <div class="tab-pane" id='tabs-profile-9' >
                           <div class="card mb-3 maxh-250 minh-250" style={{ borderColor: 'white', boxShadow: 'none' }}>
                             <div class="list-group list-group-flush overflow-auto" id='chat-box' style={{ maxHeight: '25rem' }}>
@@ -492,12 +640,24 @@ export default class MeetingShow extends React.Component {
                             </div>
                           </div>
                         </div>
+
+                        <div class="tab-pane" id='tabs-vote' >
+                          <div class="card mb-3" style={{ borderColor: 'white', boxShadow: 'none' }}>
+                            <div className='card-body p-0' style={{ maxHeight: '250px', overflowY: 'scroll' }}>
+                                  {this.pollSettings()}
+                              <div className='p-2'>
+                                {this.polls()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
                     <AttendanceCard is_admin={this.state.is_admin} attendees={this.state.attendees} attendable_type='meeting' attendable_id={this.state.id} />
 
                     <div class="card mb-3">
+                      <div class="card-status-top bg-azure"></div>
                       <div class="card-header">
                         <h3 class="card-title">{t['pages']}</h3>
                         <ul class="nav nav-pills card-header-pills">
@@ -510,6 +670,7 @@ export default class MeetingShow extends React.Component {
                     </div>
 
                     <div class="card mb-3">
+                      <div class="card-status-top bg-muted"></div>
                       <div class="card-header">
                         <h3 class="card-title">{t['resources']}</h3>
                         <ul class="nav nav-pills card-header-pills">

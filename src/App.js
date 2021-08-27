@@ -36,6 +36,8 @@ import ExhibitionEdit from "./components/exhibitions/create.jsx";
 
 import DiscussionIndex from "./components/discussions/index.jsx";
 
+import PollIndex from "./components/polls/index.jsx";
+
 import CropperShow from "./components/uploads/cropper.jsx";
 import UploadCreate from "./components/uploads/create.jsx";
 
@@ -48,6 +50,10 @@ import QuestionCreate from "./components/questions/create.jsx";
 
 import RoomShow from "./components/rooms/show.jsx";
 import AttendanceCreate from "./components/attendances/create.jsx";
+
+import SettingsIndex from "./components/settings/index.jsx";
+
+import MyCalendar from "./components/common/calendar.jsx";
 
 import ProfileIndex from "./components/profiles/index.jsx";
 import { createBrowserHistory } from 'history';
@@ -62,6 +68,12 @@ export default class App extends React.Component {
           <Route path="/wizard" exact component={UserWizard} />
           <Route path="/login" exact component={UserLogin} />
           <Route path="/login_jwt/:id" exact component={LoginJwt} />
+
+          <Route path="/settings" exact component={SettingsIndex} />
+
+          <Route path="/polls" exact component={PollIndex} />
+          
+          <Route path="/calendar" exact component={MyCalendar} />
 
           <Route path="/uploads/:id" exact component={UploadCreate} />
           <Route path="/uploads/cropper/:id" exact component={CropperShow} />

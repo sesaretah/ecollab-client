@@ -1,13 +1,22 @@
 import React from 'react'
 import ModelStore from "../../stores/ModelStore";
 import * as MyActions from "../../actions/MyActions";
+import $ from 'jquery';
 import { dict } from '../../Dict';
 import { conf } from '../../conf';
+import Validation from "../common/validation.jsx";
 import { CountryDropdown, RegionDropdown, CountryRegionData } from 'react-country-region-selector';
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
+import {
+    validateExistence
+} from "../common/validate.js";
+
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
 const t = dict['fa']
+
+
+
 
 export default class UserWizard extends React.Component {
 
@@ -18,6 +27,10 @@ export default class UserWizard extends React.Component {
         this.getInstance = this.getInstance.bind(this);
         this.handleChange = this.handleChange.bind(this);
 
+        this.modal = React.createRef();
+        this.validateExistence = validateExistence.bind(this);
+
+        
         this.state = {
             token: window.localStorage.getItem('token'),
             email: null,
@@ -29,7 +42,9 @@ export default class UserWizard extends React.Component {
             country: null,
             initials: 'NN',
             options: [],
-            tags: []
+            tags: [],
+            validationItems: [],
+            disableSubmit: true,
         }
 
     }
@@ -68,9 +83,43 @@ export default class UserWizard extends React.Component {
         }
     }
 
+    validateEmail(email) {
+        const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        return re.test(String(email).toLowerCase());
+    }
+
 
     handleChange(obj) {
         this.setState(obj);
+        if(Object.keys(obj) && Object.keys(obj)[0] && Object.keys(obj)[0]=== 'password_confirmation') {
+            if (obj['password_confirmation'] !== this.state.password){
+                this.setState({disableSubmit: true});
+                $('#password_confirmation').addClass(' is-invalid ')
+            } else {
+                this.setState({disableSubmit: false});
+                $('#password_confirmation').removeClass(' is-invalid ').addClass(' is-valid ')
+            }
+        }
+
+        if(Object.keys(obj) && Object.keys(obj)[0] && Object.keys(obj)[0]=== 'password') {
+            if (obj['password'].length < 8){
+                this.setState({disableSubmit: true});
+                $('#password').addClass(' is-invalid ')
+            } else {
+                this.setState({disableSubmit: false});
+                $('#password').removeClass(' is-invalid ').addClass(' is-valid ')
+            }
+        }
+
+        if(Object.keys(obj) && Object.keys(obj)[0] && Object.keys(obj)[0]=== 'email') {
+            if (!this.validateEmail(obj['email'])){
+                this.setState({disableSubmit: true});
+                $('#email').addClass(' is-invalid ')
+            } else {
+                this.setState({disableSubmit: false});
+                $('#email').removeClass(' is-invalid ').addClass(' is-valid ')
+            }
+        }
     }
 
     setInstance() {
@@ -87,8 +136,12 @@ export default class UserWizard extends React.Component {
 
 
     submit() {
-        var data = this.state
-        MyActions.setInstance('users/sign_up', data);
+        if (this.validateExistence(['email', 'name', 'password', 'password_confirmation'])) {
+            $('#submit-button').hide();
+            $('#submit-spinner').show();
+            var data = this.state
+            MyActions.setInstance('users/sign_up', data);
+        }
     }
 
     submitProfile() {
@@ -129,17 +182,14 @@ export default class UserWizard extends React.Component {
                         <p class="text-muted">{t['welcome_note']}</p>
                         <p class="text-muted">{t['login_if_registered']}</p>
                         <a href="/#/login" class="btn btn-outline-success w-100">
-                          {t['login']}
+                            {t['login']}
                         </a>
                     </div>
                     <div class="hr-text hr-text-center hr-text-spaceless">{t['sign_up_now']}</div>
                     <div class="card-body">
                         <div class="mb-3">
                             <label class="form-label">{t['your_email']}</label>
-                            <div class="input-group input-group-flat">
-                                <span class="input-group-text"></span>
-                                <input type="text" onInput={(e) => { this.handleChange({ email: e.target.value }) }} class="form-control ps-1" autocomplete="off" />
-                            </div>
+                                <input type="text" id='email' name='email' onInput={(e) => { this.handleChange({ email: e.target.value }) }} class="form-control ps-1" autocomplete="off" />
                             <div class="form-hint"></div>
                         </div>
 
@@ -147,28 +197,24 @@ export default class UserWizard extends React.Component {
                             <label class="form-label">{t['your_name']}</label>
                             <div class="input-group input-group-flat">
                                 <span class="input-group-text"></span>
-                                <input type="text" onInput={(e) => { this.handleChange({ name: e.target.value }) }} class="form-control ps-1" autocomplete="off" />
+                                <input type="text" name='fullname' onInput={(e) => { this.handleChange({ name: e.target.value }) }} class="form-control ps-1" autocomplete="off" />
                             </div>
                             <div class="form-hint"></div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">{t['choose_password']}</label>
-                            <div class="input-group input-group-flat">
-                                <span class="input-group-text"></span>
-                                <input type="text" onInput={(e) => { this.handleChange({ password: e.target.value }) }} class="form-control ps-1" autocomplete="off" />
-                            </div>
+                                <input type="password" id='password' onInput={(e) => { this.handleChange({ password: e.target.value }) }} class="form-control ps-1 is-valid" autocomplete="off" />
                             <div class="form-hint">{t['password_rule']}</div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">{t['repeat_password']}</label>
-                            <div class="input-group input-group-flat">
-                                <span class="input-group-text"></span>
-                                <input type="text" onInput={(e) => { this.handleChange({ password_confirmation: e.target.value }) }} class="form-control ps-1" autocomplete="off" />
-                            </div>
+
+                                <input type="password" id='password_confirmation' onInput={(e) => { this.handleChange({ password_confirmation: e.target.value }) }} class="form-control ps-1" autocomplete="off" />
                             <div class="form-hint"></div>
                         </div>
+
                     </div>
                 </div>
                 <div class="row align-items-center mt-3">
@@ -181,8 +227,8 @@ export default class UserWizard extends React.Component {
                     </div>
                     <div class="col">
                         <div class="btn-list justify-content-end">
-                            <button onClick={() => this.submit()} class="btn btn-primary">
-                            {t['sign_up_and_continue']}  
+                            <button id='submit-button' onClick={() => this.submit()} disabled={this.state.disableSubmit} class="btn btn-primary">
+                                {t['sign_up_and_continue']}
                             </button>
                         </div>
                     </div>
@@ -198,14 +244,14 @@ export default class UserWizard extends React.Component {
                     <div class="card card-md">
                         <div class="card-body text-center py-4 p-sm-5">
                             <span class="avatar avatar-xl mb-2 avatar-rounded">{this.state.initials}</span>
-                            <p class="text-muted">Click to change your profile picture</p>
+                            <p class="text-muted"></p>
                         </div>
 
-                        <div class="hr-text hr-text-center hr-text-spaceless">Complete your profile</div>
+                        <div class="hr-text hr-text-center hr-text-spaceless">{t['complete_your_profile']}</div>
 
                         <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label">Your country</label>
+                                <label class="form-label">{t['your_country']}</label>
                                 <div class="input-group input-group-flat">
                                     <span class="input-group-text"></span>
                                     <CountryDropdown classes={"form-control ps-1"} priorityOptions={['CA', 'IR', 'US']} value={this.state.country} onChange={(val) => this.handleChange({ country: val })} />
@@ -213,17 +259,18 @@ export default class UserWizard extends React.Component {
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Bio<span class="form-label-description"></span></label>
+                                <label class="form-label">{t['bio']}<span class="form-label-description"></span></label>
                                 <textarea
                                     class="form-control"
                                     name="example-textarea-input"
                                     rows="6"
-                                    placeholder="Write about your self ..."
+                                    placeholder={t['write_about_yourself']}
                                     onInput={(e) => { this.handleChange({ bio: e.target.value }) }}
                                     value={this.state.bio}>
                                 </textarea>
                             </div>
                             <div class="mb-3">
+                            <label class="form-label" >{t['tags']}</label>
                                 <AsyncTypeahead
                                     id='yytyty'
                                     allowNew
@@ -261,11 +308,8 @@ export default class UserWizard extends React.Component {
                         </div>
                         <div class="col">
                             <div class="btn-list justify-content-end">
-                                <a href="/#/" class="btn btn-link link-secondary">
-                                    Complete later
-                                </a>
                                 <button onClick={() => this.submitProfile()} class="btn btn-primary">
-                                    Continue
+                                   {t['continue']}
                                 </button>
                             </div>
                         </div>
@@ -279,6 +323,7 @@ export default class UserWizard extends React.Component {
     render() {
         return (
             <div class="page page-center">
+                <Validation items={this.state.validationItems} modal={this.modal} />
                 <div class="container-tight py-4">
                     {this.checkSignUp()}
 

@@ -24,7 +24,8 @@ export default class ExhibitionCreate extends React.Component {
     this.getInstance = this.getInstance.bind(this);
     this.setInstance = this.setInstance.bind(this);
     this.handleChange = this.handleChange.bind(this);
-
+    this.deleteInstance = this.deleteInstance.bind(this);
+    this.getList = this.getList.bind(this);
 
     this.modal = React.createRef();
     this.validateExistence = validateExistence.bind(this);
@@ -36,7 +37,10 @@ export default class ExhibitionCreate extends React.Component {
       info: null,
       options: [],
       tags: [],
+      is_admin: false,
       validationItems: [],
+      events: [],
+      event_id: null,
     }
 
   }
@@ -46,20 +50,28 @@ export default class ExhibitionCreate extends React.Component {
   componentWillMount() {
     ModelStore.on("set_instance", this.setInstance);
     ModelStore.on("got_instance", this.getInstance);
+    ModelStore.on("deleted_instance", this.deleteInstance);
+    ModelStore.on("got_list", this.getList);
 
   }
 
   componentWillUnmount() {
     ModelStore.removeListener("set_instance", this.setInstance);
     ModelStore.removeListener("got_instance", this.getInstance);
+    ModelStore.removeListener("got_list", this.getList);
+    ModelStore.removeListener("deleted_instance", this.deleteInstance);
   }
 
   componentDidMount() {
     if (this.props.match.params.id) {
       MyActions.getInstance('exhibitions', this.props.match.params.id, this.state.token);
     }
+    MyActions.getList('events/owner', this.state.page, {}, this.state.token);
   }
 
+  deleteInstance() {
+    this.props.history.push("/exhibitions/")
+  }
 
 
   handleChange(obj) {
@@ -83,11 +95,26 @@ export default class ExhibitionCreate extends React.Component {
         title: model.title,
         info: model.info,
         tags: model.tags,
+        is_admin: model.is_admin,
+        event_id: model.event_id,
         editing: true,
       }, () => {
-        console.log(this.state)
+        //console.log(this.state)
         this.tagSelected(this.state.tags);
+        if(!this.state.is_admin){
+          this.props.history.push("/exhibitions/")
+        }
       })
+    }
+  }
+
+  getList() {
+    var list = ModelStore.getList()
+    var klass = ModelStore.getKlass()
+    if (list && klass === 'Event') {
+      this.setState({
+        events: list,
+      });
     }
   }
 
@@ -167,6 +194,42 @@ export default class ExhibitionCreate extends React.Component {
     }
   }
 
+  deleteExhibition() {
+    var data = { id: this.state.id }
+    MyActions.removeInstance('exhibitions', data, this.state.token);
+  }
+
+  deleteBtn() {
+    if (this.state.editing) {
+      return (
+        <button id='delete-button' onClick={() =>{ if (window.confirm(t['are_you_sure'])) this.deleteExhibition()}} class="btn btn-danger ms-auto">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="4" y1="7" x2="20" y2="7" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
+          {t['delete']}
+        </button>
+      )
+    }
+  }
+
+  eventOptions() {
+    var result = []
+    if (this.state.events) {
+      var options = [<option value=''></option>]
+
+      this.state.events.map((event) => {
+        options.push(
+          <option value={event.id} selected={this.state.event_id == event.id ? true : false}>{event.title}</option>
+        )
+      })
+      result.push(
+        <select class="form-select" onChange={(e) => this.handleChange({ event_id: e.target.value })}>
+          {options}
+        </select>
+      )
+
+    }
+    return result
+  }
+
 
 
   render() {
@@ -206,6 +269,12 @@ export default class ExhibitionCreate extends React.Component {
                             <textarea onInput={(e) => { this.handleChange({ info: e.target.value }) }} class="form-control" id='content' name="example-textarea-input" rows="6" placeholder={t['write_something']} value={this.state.info}></textarea>
                           </div>
 
+                          <div class="mb-3" style={{ width: '100%' }}>
+                            <label class="form-label ">{t['event']}</label>
+                            {this.eventOptions()}
+                          </div>
+
+
 
                           <div class="mb-3 " id='tags' >
                             <label class="form-label" >{t['tags']}</label>
@@ -216,6 +285,7 @@ export default class ExhibitionCreate extends React.Component {
                       <div class="card-footer">
                         <div class="d-flex">
                           <a href="/#/exhibitions" class="btn btn-link">{t['cancel']}</a>
+                          {this.deleteBtn()}
                           <button id='submit-button' onClick={() => this.submit()} class="btn btn-primary ms-auto">{t['submit']}</button>
                           <div id='submit-spinner' class="spinner-border text-red ms-auto" role="status" style={{ display: 'none' }}></div>
                         </div>
@@ -228,7 +298,7 @@ export default class ExhibitionCreate extends React.Component {
                     </div>
                   </div>
 
-                  <div class="col-md-8">
+                  <div class="col-md-4">
                     <div class="card">
                       <div class="card-status-top bg-lime"></div>
                       <div class="card-body">

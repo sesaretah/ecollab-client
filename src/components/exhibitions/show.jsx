@@ -12,7 +12,7 @@ import Quill from 'quill';
 import { socket } from '../../socket.js'
 import FlyerCard from "../flyers/card.jsx";
 import {
-  socketHandle, appendChat, chatItems, throttle, send, wsSend, keydownHandler, scrollChat
+  appendChat, chatItems, throttle, send, wsSend, keydownHandler, scrollChat
 } from "../rooms/chat.js";
 
 const t = dict['fa']
@@ -24,8 +24,8 @@ export default class ExhibitionShow extends React.Component {
     this.getInstance = this.getInstance.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.setInstance = this.setInstance.bind(this);
-
-    this.socketHandle = socketHandle.bind(this);
+    this.socketHandle = this.socketHandle.bind(this);
+    
     this.appendChat = appendChat.bind(this);
     this.chatItems = chatItems.bind(this);
     this.throttle = throttle.bind(this);
@@ -82,11 +82,6 @@ export default class ExhibitionShow extends React.Component {
   componentDidMount() {
     var self = this;
     MyActions.getInstance('exhibitions', this.props.match.params.id, this.state.token);
-    // var quillOne = new Quill('#editor-one', {
-    //theme: 'snow',
-    //   readOnly: true,
-    // });
-    // this.setState({ quillOne: quillOne })
     socket.on('connect', function () {
       if (self.state.roomId) {
         socket.emit('room', { room: self.state.roomId.toString(), uuid: self.state.userUUID });
@@ -98,6 +93,19 @@ export default class ExhibitionShow extends React.Component {
         self.socketHandle(data)
       }
     });
+  }
+
+  socketHandle(msg) {
+    var self = this;
+    var parsed = msg;
+    switch (parsed.type) {
+      case "chat":
+        self.appendChat(parsed.c);
+        break;
+      case "userCounter":
+        self.setState({ userCounter: parsed.c });
+        break;
+    }
   }
 
 

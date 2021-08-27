@@ -2,19 +2,27 @@ import Janus from "../../janus.js";
 import $ from "jquery";
 export function sessionCreate(room) {
   var self = this;
-  console.log('Trying to connect to', room)
+  console.log("Trying to connect to", room);
   Janus.init({
-    debug: "all",
+    debug: "none",
     callback: function () {
       var janus = new Janus({
         server: self.state.server,
+        iceServers: [
+          { url: "stun:stun.l.google.com:19302" },
+          {
+            url: "turn:sync1.ut.ac.ir:3478",
+            username: "shafiei",
+            credential: "12345678",
+          },
+        ],
         success: function () {
           // Attach to AudioBridge plugin
           janus.attach({
             plugin: "janus.plugin.audiobridge",
             opaqueId: self.state.opaqueId,
             success: function (pluginHandle) {
-              self.setState({ mixertest: pluginHandle , janus: janus});
+              self.setState({ mixertest: pluginHandle, janus: janus });
               Janus.log(
                 "Plugin attached! (" +
                   self.state.mixertest.getPlugin() +
@@ -72,8 +80,8 @@ export function sessionCreate(room) {
                       "Successfully joined room " +
                         msg["room"] +
                         " with ID " +
-                        self.state.myid + 
-                        'with role:' + 
+                        self.state.myid +
+                        "with role:" +
                         self.currentRole()
                     );
                     var role = self.currentRole();
@@ -87,7 +95,7 @@ export function sessionCreate(room) {
                         "§" +
                         self.state.initials +
                         "§" +
-                        role,
+                        role
                     );
 
                     if (!self.state.webrtcUp) {
@@ -147,6 +155,7 @@ export function sessionCreate(room) {
                     console.log(">>>>>>>>>>>>>>>");
                     console.log("Got a list of participants:", list);
                     for (var f in list) {
+                      console.log(list[f]);
                       var id = list[f]["id"];
                       var display = list[f]["display"];
                       var setup = list[f]["setup"];
@@ -186,6 +195,7 @@ export function sessionCreate(room) {
                     var list = msg["participants"];
                     Janus.debug("Got a list of participants:", list);
                     for (var f in list) {
+                      console.log(list[f]);
                       var id = list[f]["id"];
                       var display = list[f]["display"];
                       var setup = list[f]["setup"];
@@ -292,6 +302,31 @@ export function registerUsername(room) {
   self.setState({ myId: self.state.mixertest.id, role: role });
 }
 
+export function changeUsername(room) {
+  var self = this;
+  var role = this.currentRole();
+  console.log("changing role to ..", role, parseInt(room));
+  var register = {
+    request: "configure",
+    //room: parseInt(room),
+    //pin: self.state.vpin,
+    display:
+      self.state.fullname +
+      " §" +
+      self.state.userUUID +
+      "§" +
+      self.state.userColor +
+      "§" +
+      self.state.initials +
+      "§" +
+      role,
+  };
+  //console.log("changing role to ..", role, parseInt(room), register);
+  self.state.mixertest.send({ message: register });
+  self.setState({ myId: self.state.mixertest.id, role: role });
+  self.changeOwn(self.state.userUUID, role);
+}
+
 export function currentRole() {
   var role = "listener";
   if (this.state.is_speaker) {
@@ -328,8 +363,10 @@ export function addParticipant(id, p) {
         current: "stopped-talking",
       }),
     });
+  } else {
+    self.changeParticipant(id, p);
   }
-  console.log("Adding Participants ...", participant[0], participant[4]);
+  //console.log("Adding Participants ...", participant[0], participant[4]);
 }
 
 export function exisitingParticipant(participantId) {
@@ -341,6 +378,56 @@ export function exisitingParticipant(participantId) {
     return true;
   } else {
     return false;
+  }
+}
+
+export function changeOwn(uuid, role){
+  var self = this;
+  var exisiting = self.state.participants.filter(
+    (item) => item.uuid === uuid
+  );
+  if(exisiting && exisiting.length > 0) {
+    self.setState(
+      {
+        participants: self.state.participants.filter(
+          (item) => item.uuid !== uuid
+        ),
+      },
+      () => { 
+        exisiting[0]['role'] = role
+        self.setState({
+          participants: self.state.participants.concat(exisiting[0]) 
+        })
+      })
+  }
+}
+
+export function changeParticipant(id, p) {
+  var self = this;
+  var participant = p.split("§");
+  if (participant[1] && participant[4]) {
+    console.log('%%%%%%%', participant[1], id)
+    self.setState(
+      {
+        participants: self.state.participants.filter(
+          (item) => item.uuid !== participant[1]
+        ),
+      },
+      () => {
+        self.setState({
+          participants: self.state.participants.concat({
+            id: id,
+            display: participant[0],
+            uuid: participant[1],
+            userColor: participant[2],
+            initials: participant[3],
+            role: participant[4],
+            current: "stopped-talking",
+          }),
+        });
+      }
+    );
+    console.log("Adding Participants ...", participant[0], participant[4]);
   }
 }
 
@@ -409,12 +496,9 @@ export function forceMute() {
 
 export function exitAudioRoom() {
   var self = this;
-  console.log('exitAudioRoom')
+  console.log("exitAudioRoom");
   if (this.state.mixertest) {
-    console.log('exitAudioRoom')
+    console.log("exitAudioRoom");
     this.state.mixertest.send({ message: { request: "leave" } });
   }
 }
-
-
-

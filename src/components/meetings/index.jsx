@@ -4,6 +4,7 @@ import * as MyActions from "../../actions/MyActions";
 import $ from 'jquery';
 import { dict } from '../../Dict';
 import { conf } from '../../conf';
+import queryString from 'query-string'
 import Header from "../header/header.jsx";
 import MeetingMasonry from "./masonry.jsx";
 import moment from 'moment-jalaali'
@@ -34,6 +35,7 @@ export default class MeetingIndex extends React.Component {
             page: 1,
             event_id: 0,
             pages: 0,
+            registration_status: 'all'
         }
 
     }
@@ -51,7 +53,16 @@ export default class MeetingIndex extends React.Component {
     }
 
     componentDidMount() {
-        MyActions.getList('meetings', this.state.page, {}, this.state.token);
+        const value = queryString.parse(this.props.location.search);
+        if (value.event_id) {
+            this.setState({ event_id: value.event_id })
+            MyActions.getList('meetings', this.state.page, { event_id: value.event_id }, this.state.token);
+        } else {
+            MyActions.getList('meetings', this.state.page, {}, this.state.token);
+        }
+        if (value.registration_status) {
+            this.setState({ registration_status: value.registration_status })
+        }
         MyActions.getList('events/related', this.state.page, {}, this.state.token);
     }
 
@@ -111,18 +122,18 @@ export default class MeetingIndex extends React.Component {
     }
 
     noMeetingCard() {
-        return(
-        <div class="card">
-            <div class="empty">
-                <div class="empty-img">
-                <div className="demo-icon-preview"><svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M12 9v2m0 4v.01"></path><path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75"></path></svg></div>
+        return (
+            <div class="card">
+                <div class="empty">
+                    <div class="empty-img">
+                        <div className="demo-icon-preview"><svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M12 9v2m0 4v.01"></path><path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75"></path></svg></div>
+                    </div>
+                    <p class="empty-title">{t['no_result_to_show']}</p>
+                    <p class="empty-subtitle text-muted">
+                        {t['try_adjusting_your_search']}
+                    </p>
                 </div>
-                <p class="empty-title">{t['no_result_to_show']}</p>
-                <p class="empty-subtitle text-muted">
-                    {t['try_adjusting_your_search']}
-                </p>
             </div>
-        </div>
         )
     }
 
@@ -154,9 +165,10 @@ export default class MeetingIndex extends React.Component {
 
     search() {
         $('#search-spinner').show();
-        var data = { q: this.state.q, event_id: this.state.event_id, start_from: this.state.start_from, start_to: this.state.start_to, tags: this.state.tags }
-        MyActions.getList('meetings/search', this.state.page, data, this.state.token);
-        this.setState({ page: 1 })
+        var data = { q: this.state.q, registration_status: this.state.registration_status, event_id: this.state.event_id, start_from: this.state.start_from, start_to: this.state.start_to, tags: this.state.tags }
+        this.setState({ page: 1 }, () => {
+            MyActions.getList('meetings/search', this.state.page, data, this.state.token);
+        })        
     }
 
     attend(flag, attendable_id) {
@@ -236,9 +248,16 @@ export default class MeetingIndex extends React.Component {
             var options = [<option value=''></option>]
 
             this.state.events.map((event) => {
-                options.push(
-                    <option value={event.id}>{event.title}</option>
-                )
+                if (event.id == this.state.event_id) {
+                    options.push(
+                        <option value={event.id} selected={true}>{event.title}</option>
+                    )
+                } else {
+                    options.push(
+                        <option value={event.id}>{event.title}</option>
+                    )
+                }
+
             })
             result.push(
                 <select class="form-select" onChange={(e) => this.handleChange({ event_id: e.target.value })}>
@@ -263,6 +282,10 @@ export default class MeetingIndex extends React.Component {
         }
     }
 
+    changeType(e) {
+        this.setState({ registration_status: e })
+    }
+
 
     render() {
 
@@ -280,10 +303,7 @@ export default class MeetingIndex extends React.Component {
                                     </div>
                                     <div class="col-auto ms-auto d-print-none">
                                         <div class="btn-list">
-                                            <a href={"/#/meetings/create"} class="btn btn-primary"  >
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                                {t['create_meeting']}
-                                            </a>
+
                                         </div>
                                     </div>
                                 </div>
@@ -328,6 +348,24 @@ export default class MeetingIndex extends React.Component {
                                                         onChange={value => { this.setState({ start_to: value }) }}
                                                         value={moment(this.state.start_to)}
                                                     />
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <div class="form-label">{t['registeration']}</div>
+                                                    <div>
+                                                        <label class="form-check ">
+                                                            <input class="form-check-input" type="radio" value='all' checked={this.state.registration_status === 'all' ? true : false} onClick={(e) => this.changeType(e.target.value)} />
+                                                            <span class="form-check-label">{t['all']}</span>
+                                                        </label>
+                                                        <label class="form-check ">
+                                                            <input class="form-check-input" type="radio" value='registered' checked={this.state.registration_status === 'registered' ? true : false} onClick={(e) => this.changeType(e.target.value)} />
+                                                            <span class="form-check-label">{t['registered']}</span>
+                                                        </label>
+                                                        <label class="form-check ">
+                                                            <input class="form-check-input" type="radio" value='not_registered' checked={this.state.registration_status === 'not_registered' ? true : false} onClick={(e) => this.changeType(e.target.value)} />
+                                                            <span class="form-check-label">{t['not_registered']}</span>
+                                                        </label>
+                                                    </div>
                                                 </div>
 
                                                 <div class="mb-3 " id='tags' >

@@ -31,6 +31,7 @@ const AttendanceCard = (props) => {
     return (
 
         <div className="card mb-3" style={props.height ? { height: props.height } : { height: 'auto' }}>
+            <div class="card-status-top bg-cyan"></div>
             <div className="card-header" >
                 <h3 class="card-title">{t['participants']}</h3>
                 <ul class="nav nav-pills card-header-pills">

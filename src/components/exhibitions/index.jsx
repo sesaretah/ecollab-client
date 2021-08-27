@@ -7,6 +7,7 @@ import { conf } from '../../conf';
 import Header from "../header/header.jsx";
 import ExhibitionCard from "./card.jsx";
 import moment from 'moment-jalaali'
+import queryString from 'query-string'
 import DatePicker2 from 'react-datepicker2';
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
 const AsyncTypeahead = withAsync(Typeahead);
@@ -20,6 +21,7 @@ export default class ExhibitionIndex extends React.Component {
         super(props);
         this.getList = this.getList.bind(this);
         this.handleChange = this.handleChange.bind(this);
+        this.getInstance = this.getInstance.bind(this);
 
         this.state = {
             token: window.localStorage.getItem('token'),
@@ -31,6 +33,9 @@ export default class ExhibitionIndex extends React.Component {
             start_to: moment().add(2, 'jMonth'),
             tags: [],
             page: 1,
+            userAbilities: null,
+            event_id: null,
+            events: [],
         }
 
     }
@@ -38,15 +43,31 @@ export default class ExhibitionIndex extends React.Component {
 
     componentWillMount() {
         ModelStore.on("got_list", this.getList);
+        ModelStore.on("got_instance", this.getInstance);
     }
 
     componentWillUnmount() {
         ModelStore.removeListener("got_list", this.getList);
+        ModelStore.removeListener("got_instance", this.getInstance);
     }
 
     componentDidMount() {
-        MyActions.getList('exhibitions', this.state.page, {}, this.state.token);
-        MyActions.getList('tags/top', this.state.page, {}, this.state.token);
+        const value = queryString.parse(this.props.location.search);
+        if (value.event_id) {
+            this.setState({ event_id: value.event_id })
+            MyActions.getList('exhibitions', this.state.page, { event_id: value.event_id }, this.state.token);
+        } else {
+            MyActions.getList('exhibitions/related', this.state.page, {}, this.state.token);
+        }
+
+      
+
+
+        if (this.state.token && this.state.token.length > 10) {
+            MyActions.getInstance('profiles/my', 1, this.state.token);
+        } else {
+            this.props.history.push("login")
+        }
     }
 
     getList() {
@@ -65,17 +86,25 @@ export default class ExhibitionIndex extends React.Component {
                         exhibitions: this.state.exhibitions.concat(list),
                     });
                 }
-                this.setState({ page: list[0].page })
+                this.setState({ page: list[0].page, pages: list[0].pages })
             } else {
                 this.setState({
                     exhibitions: [],
+                    page: 0,
                 });
             }
             console.log(list)
         }
-        if (list && klass === 'Tag') {
+    }
+
+    getInstance() {
+        var klass = ModelStore.getKlass()
+        var model = ModelStore.getIntance()
+
+        if (model && klass === 'Profile') {
             this.setState({
-                allTags: list,
+                profile: model,
+                userAbilities: model.abilities
             });
         }
     }
@@ -153,8 +182,9 @@ export default class ExhibitionIndex extends React.Component {
     search() {
         $('#search-spinner').show();
         var data = { q: this.state.q, tags: this.state.tags }
-        MyActions.getList('exhibitions/search', this.state.page, data, this.state.token);
-        this.setState({ page: 1 })
+        this.setState({ page: 1 }, () => {
+            MyActions.getList('exhibitions/search', this.state.page, data, this.state.token);
+        })
     }
 
     tagCheckbox() {
@@ -218,11 +248,35 @@ export default class ExhibitionIndex extends React.Component {
 
     loadMore() {
         var data = { id: this.state.id, page: this.state.page + 1, q: this.state.q, tags: this.state.tags }
-        MyActions.getList('exhibitions/search', this.state.page, data, this.state.token);
+        MyActions.getList('exhibitions/search', this.state.page + 1, data, this.state.token);
     }
 
 
+    createBtn() {
+        if (this.state.userAbilities && this.state.userAbilities.create_exhibition) {
+            return (
+                <div class="btn-list">
+                    <a href={"/#/exhibitions/create"} class="btn btn-primary"  >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        {t['create_exhibition']}
+                    </a>
+                </div>
+            )
+        }
+    }
 
+    moreBtn() {
+        if (this.state.pages > this.state.page) {
+            return (
+                <div class="hr-text">
+                    <a onClick={() => this.loadMore()}>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><circle cx="12" cy="12" r="9" /><line x1="8" y1="12" x2="12" y2="16" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="16" y1="12" x2="12" y2="16" /></svg>
+                        {t['more']}
+                    </a>
+                </div>
+            )
+        }
+    }
 
     render() {
 
@@ -239,12 +293,7 @@ export default class ExhibitionIndex extends React.Component {
                                         <h2 className="page-title">{t['exhibitions']}</h2>
                                     </div>
                                     <div class="col-auto ms-auto d-print-none">
-                                        <div class="btn-list">
-                                            <a href={"/#/exhibitions/create"} class="btn btn-primary"  >
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                                {t['create_exhibition']}
-                                            </a>
-                                        </div>
+                                        {this.createBtn()}
                                     </div>
                                 </div>
                             </div>
@@ -292,6 +341,7 @@ export default class ExhibitionIndex extends React.Component {
                                     </div>
                                     <div class="col-lg-9">
                                         {this.cardMasonry()}
+                                        {this.moreBtn()}
                                     </div>
                                 </div>
                             </div>

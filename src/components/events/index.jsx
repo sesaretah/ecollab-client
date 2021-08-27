@@ -22,6 +22,7 @@ export default class EventIndex extends React.Component {
         this.handleChange = this.handleChange.bind(this);
         this.attend = this.attend.bind(this);
         this.setInstance = this.setInstance.bind(this);
+        this.getInstance = this.getInstance.bind(this);
 
 
 
@@ -35,7 +36,8 @@ export default class EventIndex extends React.Component {
             start_to: moment().add(2, 'jMonth'),
             tags: [],
             page: 1,
-            pages: 0
+            pages: 0,
+            userAbilities: null,
         }
 
     }
@@ -44,16 +46,23 @@ export default class EventIndex extends React.Component {
     componentWillMount() {
         ModelStore.on("got_list", this.getList);
         ModelStore.on("set_instance", this.setInstance);
+        ModelStore.on("got_instance", this.getInstance);
     }
 
     componentWillUnmount() {
         ModelStore.removeListener("got_list", this.getList);
         ModelStore.removeListener("set_instance", this.setInstance);
+        ModelStore.removeListener("got_instance", this.getInstance);
     }
 
     componentDidMount() {
         MyActions.getList('events', this.state.page, {}, this.state.token);
-        MyActions.getList('tags/top', this.state.page, {}, this.state.token);
+        //MyActions.getList('tags/top', this.state.page, {}, this.state.token);
+        if (this.state.token && this.state.token.length > 10) {
+            MyActions.getInstance('profiles/my', 1, this.state.token);
+        } else {
+            this.props.history.push("login")
+        }
     }
 
     getList() {
@@ -107,7 +116,17 @@ export default class EventIndex extends React.Component {
         }
     }
 
+    getInstance() {
+        var klass = ModelStore.getKlass()
+        var model = ModelStore.getIntance()
 
+        if (model && klass === 'Profile') {
+            this.setState({
+                profile: model,
+                userAbilities: model.abilities
+            });
+        }
+    }
 
     handleChange(obj) {
         this.setState(obj);
@@ -269,6 +288,19 @@ export default class EventIndex extends React.Component {
         }
     }
 
+    createBtn() {
+        if (this.state.userAbilities && this.state.userAbilities.create_event) {
+            return (
+                <div class="btn-list">
+                    <a href={"/#/events/create"} class="btn btn-primary"  >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        {t['create_event']}
+                    </a>
+                </div>
+            )
+        }
+    }
+
 
     render() {
 
@@ -285,12 +317,7 @@ export default class EventIndex extends React.Component {
                                         <h2 className="page-title">{t['events']}</h2>
                                     </div>
                                     <div class="col-auto ms-auto d-print-none">
-                                        <div class="btn-list">
-                                            <a href={"/#/events/create"} class="btn btn-primary"  >
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                                {t['create_event']}
-                                            </a>
-                                        </div>
+                                    {this.createBtn()}
                                     </div>
                                 </div>
                             </div>

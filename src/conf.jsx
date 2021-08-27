@@ -9,5 +9,4 @@ export const conf = {
 'ionSignalServer' : 'wss://sync.ut.ac.ir:7000/ws',
 //'janusServer' : 'https://kaarafarinan.ir:8089/janus',
 'janusServer' : 'https://sync.ut.ac.ir:8089/janus'
-
 };

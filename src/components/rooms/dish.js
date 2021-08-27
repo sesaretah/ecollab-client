@@ -15,11 +15,11 @@ export function dishArea(Increment, Count, Width, Height, Margin = 10) {
     else return Increment;
 }
 // Dish:
-export function disher() {
+export function disher(el, cam) {
 
     // variables:
         let Margin = 2;
-        let Scenary = document.getElementById('Dish');
+        let Scenary = document.getElementById(el);
         let Width = 0;
         let Height = 0;
         if (Scenary) {
@@ -27,7 +27,7 @@ export function disher() {
              Height = Scenary.offsetHeight - (Margin * 2);
         }
 
-        let Cameras = document.getElementsByClassName('Camera');
+        let Cameras = document.getElementsByClassName(cam);
         let max = 0;
     
     // loop (i recommend you optimize this)
@@ -43,12 +43,12 @@ export function disher() {
     
     // set styles
         max = max - (Margin * 2);
-        setWidth(max, Margin);
+        setWidth(max, Margin, cam);
 }
 
 // Set Width and Margin 
-export function setWidth(width, margin) {
-    let Cameras = document.getElementsByClassName('Camera');
+export function setWidth(width, margin, cam) {
+    let Cameras = document.getElementsByClassName(cam);
     for (var s = 0; s < Cameras.length; s++) {
         Cameras[s].style.width = width + "px";
         Cameras[s].style.margin = margin + "px";

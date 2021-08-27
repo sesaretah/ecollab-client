@@ -11,6 +11,14 @@ export function vsessionCreate(room) {
       // Create session
       var janus = new Janus({
         server: self.state.server,
+        iceServers: [
+          { url: "stun:stun.l.google.com:19302" },
+          {
+            url: "turn:sync1.ut.ac.ir:3478",
+            username: "shafiei",
+            credential: "12345678",
+          },
+        ],
         success: function () {
           // Attach to VideoRoom plugin
           janus.attach({
@@ -29,7 +37,7 @@ export function vsessionCreate(room) {
               );
               Janus.log("  -- This is a publisher/manager");
               self.vregisterUsername(room);
-              initDevices()
+              //initDevices()
               // Prepare the username registration
             },
             error: function (error) {
@@ -60,6 +68,7 @@ export function vsessionCreate(room) {
             },
             onmessage: function (msg, jsep) {
               Janus.debug(" ::: Got a message (publisher) :::", msg);
+              console.log(" ::: Got a message (publisher) :::", msg);
               var event = msg["videoroom"];
               Janus.debug("Event: " + event);
               if (event) {
@@ -77,16 +86,22 @@ export function vsessionCreate(room) {
                       " with ID " +
                       msg["id"]
                   );
-                  self.addParticipant(
+                  var role = this.currentRole();
+                  self.vAddParticipant(
                     msg["id"],
-                    self.state.fullname + "§" + self.state.userUUID
+                    self.state.fullname +
+                    " §" +
+                    self.state.userUUID +
+                    "§" +
+                    self.state.userColor +
+                    "§" +
+                    self.state.initials +
+                    "§" +
+                    role +
+                    "§" +
+                    self.state.slot,
                   );
-                  if (
-                    self.state.reloadParams &&
-                    self.state.reloadParams["cam"]
-                  ) {
-                    self.ionRequestRoom();
-                  }
+
                   //publishOwnFeed(true);
                   //}
                   // Any new feed to attach to?
@@ -114,7 +129,7 @@ export function vsessionCreate(room) {
                           ")"
                       );
                       self.vAddParticipant(list[f]["id"], list[f]["display"]);
-                      self.vNewRemoteFeed(id, '' ,display, audio, video);
+                      self.vNewRemoteFeed(id, "", display, audio, video);
                     }
                   }
                 } else if (event === "destroyed") {
@@ -146,7 +161,45 @@ export function vsessionCreate(room) {
                           ")"
                       );
                       self.vAddParticipant(list[f]["id"], list[f]["display"]);
-                      self.vNewRemoteFeed(id, '' ,display, audio, video);
+                      self.vNewRemoteFeed(id, "", display, audio, video);
+                    }
+                  } else if (msg["display"]) {
+                    var role = msg["display"].split("§")[4];
+                    var uuid = msg["display"].split("§")[1];
+                    self.changeOwn(uuid, role);
+                    self.vChangeOwn(uuid, role);
+                    if (
+                      self.state.isSata &&
+                      (role === "moderator" || role === "presenter")
+                    ) {
+                      self.vNewRemoteFeed(
+                        msg["id"],
+                        "",
+                        msg["display"],
+                        audio,
+                        video
+                      );
+                    }
+                    if (
+                      self.state.isSata &&
+                      (role === "speaker" || role === "listener")
+                    ) {
+                      //console.log(msg["id"], self.state.feeds);
+                      var unsubscribe = {
+                        request: "leave",
+                      };
+                      var feed = self.state.feeds.filter(
+                        (item) => item.rfid === msg["id"]
+                      );
+                      if (feed && feed[0]) {
+                        console.log(feed[0]);
+                        feed[0].send({
+                          message: unsubscribe,
+                          success: function (result) {
+                            console.log(result);
+                          },
+                        });
+                      }
                     }
                   } else if (msg["leaving"]) {
                     // One of the publishers has gone away?
@@ -220,7 +273,7 @@ export function vsessionCreate(room) {
               }
 
               var videoTracks = stream.getVideoTracks();
-              console.log('onlocalstream', videoTracks)
+              console.log("onlocalstream", videoTracks);
               if (!videoTracks || videoTracks.length === 0) {
                 self.vStreamDettacher(self.state.sfutest);
               } else {
@@ -249,11 +302,11 @@ export function vsessionCreate(room) {
             params = params + "&mic=true";
           }
           if (params === "") {
-            var bar = self.getJsonFromUrl(self.$f7.view[0].history[0]);
-            params = params + "?cam=" + bar["cam"] + "&mic=" + bar["mic"];
+            // var bar = self.getJsonFromUrl(self.$f7.view[0].history[0]);
+            // params = params + "?cam=" + bar["cam"] + "&mic=" + bar["mic"];
           }
           //console.log('%%%%%%%%%%%%%%%', params)
-          window.location.replace("http://localhost:3000/" + params);
+          //window.location.replace("http://localhost:3000/" + params);
           //});
         },
         destroyed: function () {
@@ -264,9 +317,19 @@ export function vsessionCreate(room) {
   });
 }
 
-export function vNewRemoteFeed(id, feeds, display, audio, video) {
+export function vNewRemoteFeed(
+  id,
+  feeds,
+  display,
+  audio,
+  video,
+  unsubscribe = false
+) {
   var self = this;
   var name = display.split("§")[0];
+  var role = display.split("§")[4];
+  console.log(">>>>>>", role);
+  //console.log('88888888', display)
   // A new feed has been published, create a new plugin handle and attach to it as a subscriber
   var remoteFeed = null;
   self.state.janus.attach({
@@ -286,9 +349,9 @@ export function vNewRemoteFeed(id, feeds, display, audio, video) {
       // We wait for the plugin to send us an offer
       var subscribe = {
         request: "join",
-        room: 1234,
+        room: parseInt(self.state.vroomId),
         ptype: "subscriber",
-        pin: self.state.pin,
+        pin: self.state.vpin,
         feed: id,
         private_id: self.state.mypvtid,
       };
@@ -309,9 +372,15 @@ export function vNewRemoteFeed(id, feeds, display, audio, video) {
         );
         subscribe["offer_video"] = false;
       }
-      //subscribe["offer_video"] = false;
+
       remoteFeed.videoCodec = video;
-      remoteFeed.send({ message: subscribe });
+      if (self.state.isSata && (role === "moderator" || role === "presenter")) {
+        remoteFeed.send({ message: subscribe });
+      }
+
+      if (!self.state.isSata) {
+        remoteFeed.send({ message: subscribe });
+      }
     },
     error: function (error) {
       Janus.error("  -- Error attaching plugin...", error);
@@ -319,11 +388,12 @@ export function vNewRemoteFeed(id, feeds, display, audio, video) {
     },
     onmessage: function (msg, jsep) {
       Janus.debug(" ::: Got a message (subscriber) :::", msg);
+      console.log(" ::: Got a message (subscriber) :::", msg);
       var event = msg["videoroom"];
       Janus.log("Event: " + event);
 
       if (msg["error"]) {
-        window.alert(msg["error"]);
+        // window.alert(msg["error"]);
       } else if (event) {
         if (event === "attached") {
           remoteFeed.rfid = msg["id"];
@@ -345,6 +415,9 @@ export function vNewRemoteFeed(id, feeds, display, audio, video) {
               msg["room"]
           );
         } else if (event === "event") {
+          if (msg["leaving"]) {
+            //self.disher();
+          }
         } else {
           // What has just happened?
         }
@@ -397,6 +470,12 @@ export function vNewRemoteFeed(id, feeds, display, audio, video) {
     },
     ondata: function (data) {},
     oncleanup: function () {
+      self.vStreamDettacher(remoteFeed);
+      self.setState({
+        feeds: self.state.feeds.filter((item) => item.id !== remoteFeed.id),
+      });
+      self.disher();
+      //self.vremoveParticipant(remoteFeed.rfid);
       Janus.log(" ::: Got a cleanup notification (remote feed " + id + ") :::");
     },
   });
@@ -404,31 +483,70 @@ export function vNewRemoteFeed(id, feeds, display, audio, video) {
 
 export function vregisterUsername(room) {
   var self = this;
-  var register = {
-    request: "join",
-    room: 1234,
-    ptype: "publisher",
-    //pin: self.state.pin,
-    display:
-      self.state.fullname +
-      " §" +
-      self.state.userUUID +
-      "§" +
-      self.state.userColor +
-      "§" +
-      self.state.slot,
+  var role = this.currentRole();
+  var slot = 1;
+  var list = {
+    request: "listparticipants",
+    room: parseInt(this.state.vroomId),
   };
-  self.state.sfutest.send({ message: register });
+
+  self.state.sfutest.send({
+    message: list,
+    success: function (result) {
+      var uuids = [];
+      if (result.participants && result.participants.length > 0) {
+        result.participants.map((participant) => {
+          if(participant.display.split("§")[5] && participant.display.split("§")[5] !== 'NaN'){
+            uuids.push(parseInt(participant.display.split("§")[5]));
+          }
+        });
+      }
+      if(uuids.length > 0 ) {
+       // slot = Math.min(uuids) ;
+       slot = Math.max(...uuids) + 1;
+       console.log('&&&&&', uuids, slot);
+      }
+
+      if(self.state.is_moderator){
+        //slot = 0;
+      }
+      self.setState({slot: slot})
+
+
+      var register = {
+        request: "join",
+        room: parseInt(room),
+        ptype: "publisher",
+        pin: self.state.vpin,
+        display:
+          self.state.fullname +
+          " §" +
+          self.state.userUUID +
+          "§" +
+          self.state.userColor +
+          "§" +
+          self.state.initials +
+          "§" +
+          role +
+          "§" +
+          slot,
+      };
+      self.state.sfutest.send({ message: register });
+    },
+  });
+
   //self.setState({ myVroomId: self.state.mixertest.id });
 }
 
 export function vChangeUsername(room) {
   var self = this;
+  var role = this.currentRole();
+  console.log("changing role to ..", role, parseInt(room));
+
   var register = {
     request: "configure",
-    room: 1234,
-    ptype: "publisher",
-    //pin: self.state.pin,
+    room: parseInt(room),
+    pin: self.state.vpin,
     display:
       self.state.fullname +
       " §" +
@@ -436,13 +554,55 @@ export function vChangeUsername(room) {
       "§" +
       self.state.userColor +
       "§" +
+      self.state.initials +
+      "§" +
+      role +
+      "§" +
       self.state.slot,
   };
+
   self.state.sfutest.send({ message: register });
-  //self.setState({ myVroomId: self.state.mixertest.id });
+  self.setState({ myId: self.state.mixertest.id, role: role });
+  self.changeOwn(self.state.userUUID, role);
+  self.vChangeOwn(self.state.userUUID, role);
 }
 
-export function vStreamAttacher(feed, display='') {
+export function listParticipants(room) {
+  var self = this;
+  var list = {
+    request: "listparticipants",
+    room: parseInt(this.state.vroomId),
+  };
+  self.state.sfutest.send({
+    message: list,
+    success: function (result) {
+      console.log(result);
+    },
+  });
+}
+
+export function vChangeOwn(uuid, role){
+  var self = this;
+  var exisiting = self.state.vparticipants.filter(
+    (item) => item.uuid === uuid
+  );
+  if(exisiting && exisiting.length > 0) {
+    self.setState(
+      {
+        vparticipants: self.state.vparticipants.filter(
+          (item) => item.uuid !== uuid
+        ),
+      },
+      () => { 
+        exisiting[0]['role'] = role
+        self.setState({
+          vparticipants: self.state.vparticipants.concat(exisiting[0]) 
+        })
+      })
+  }
+}
+
+export function vStreamAttacher(feed, display = "") {
   var self = this;
   console.log("Attaching " + feed);
   console.log($("#video-" + feed.id));
@@ -450,46 +610,67 @@ export function vStreamAttacher(feed, display='') {
     var localVideo = document.createElement("video");
     localVideo.autoplay = true;
     localVideo.muted = true;
-    //localVideo.width = "initial";
     localVideo.id = "video-" + feed.id;
-    $('#Dish').append("<div id='d-"+ feed.id +"' class='Camera' data-content='"+ display +"'></div>");  
-     
   }
-  
-  
-  //$("#video-" + feed.id).show();
-  if (localVideo) $("#d-"+ feed.id).append(localVideo);
+
   if (feed.id && feed.webrtcStuff && feed.webrtcStuff.remoteStream) {
-    self.setState({ vActive: true });
-    //if (localVideo) $("#remoteVideos").append(localVideo);
+    if ($("#video-" + feed.id).length == 0) {
+      $("#Dish").append(
+        "<div id='d-" +
+          feed.id +
+          "' class='Camera' data-content='" +
+          display +
+          "'></div>"
+      );
+    }
+    if (localVideo) $("#d-" + feed.id).append(localVideo);
     Janus.attachMediaStream(
       document.getElementById("video-" + feed.id),
       feed.webrtcStuff.remoteStream
     );
-    self.disher();
+    self.disher("Dish", "Camera");
   }
   if (feed.id && feed.webrtcStuff && feed.webrtcStuff.myStream) {
-    //if (localVideo) $("#selfVideos").append(localVideo);
-    $("#videoLoaderIcon").hide();
-    $("#videoLoaderIcon2").hide();
-    
-    $("#disableVideo").show();
+    if (self.state.isSata) {
+      if ($("#video-" + feed.id).length == 0) {
+        $("#myDish").append(
+          "<div id='d-" +
+            feed.id +
+            "' class='myCamera' data-content='" +
+            display +
+            "'></div>"
+        );
+      }
+    } else {
+      if ($("#video-" + feed.id).length == 0) {
+        $("#Dish").append(
+          "<div id='d-" +
+            feed.id +
+            "' class='Camera' data-content='" +
+            display +
+            "'></div>"
+        );
+      }
+    }
+    if (localVideo) $("#d-" + feed.id).append(localVideo);
     Janus.attachMediaStream(
       document.getElementById("video-" + feed.id),
       feed.webrtcStuff.myStream
     );
-    self.disher();
-    
+    if (self.state.isSata) {
+      self.disher("myDish", "myCamera");
+    } else {
+      self.disher("Dish", "Camera");
+    }
   }
-  $("#video-" + feed.id).css('width', 'inherit'); 
+  $("#video-" + feed.id).css("width", "inherit");
 }
 
 export function vStreamDettacher(feed) {
   if (feed.id) {
-    //console.log("Dettaching " + feed.id);
     $("#video-" + feed.id).remove();
     $("#d-" + feed.id).remove();
-    this.disher();
+    this.disher("Dish", "Camera");
   }
 }
 
@@ -501,7 +682,6 @@ export function vremoveParticipant(id) {
 }
 
 export function vAddParticipant(id, p) {
-  //console.log("Adding Participants ...", id, p);
   var self = this;
   var participant = p.split("§");
   if (this.exisitingParticipant(participant[1])) {
@@ -511,27 +691,27 @@ export function vAddParticipant(id, p) {
         display: participant[0],
         uuid: participant[1],
         userColor: participant[2],
-        role: "listener",
+        initials: participant[3],
+        role: participant[4],
+        slot: participant[5],
         current: "stopped-talking",
       }),
     });
   }
-  //console.log("participant added:", participant[1]);
 }
 
-export function publishCamera(bitrate = 16, deviceId = null) {
+export function publishCamera(bitrate = 8, deviceId = null) {
   var self = this;
   var video = true;
   var device = true;
-  if (!self.state.isAdmin) {
-    video = { width: 180, height: 151 };
-    
-  } 
-  if (self.state.slot === '0') {
-    video = "hires-16:9"
+  if (self.state.is_moderator) {
+    video = "hires-16:9";
+    bitrate = 64;
+  } else {
+    video = "lowres";
   }
-  if(deviceId){
-    device = {deviceId: { exact: deviceId}}
+  if (deviceId) {
+    device = { deviceId: { exact: deviceId } };
   }
   self.state.sfutest.createOffer({
     media: {
@@ -552,25 +732,16 @@ export function publishCamera(bitrate = 16, deviceId = null) {
           request: "configure",
           audio: false,
           video: true,
-          //video:{width: 180, height: 180},
           data: false,
           bitrate: bitrate * 8000,
           bitrate_cap: true,
-          //videocodec: "vp8",
         };
         self.state.sfutest.send({ message: publish, jsep: jsep });
       }
       self.setState({ publishedCamera: true });
       $("#camera-spinner").hide();
       $("#camera-off").show();
-      $("#camera-off").css('color', 'black');
-      console.log("ID: >>>", self.state.sfutest.id);
-      socket.emit("ionSetSlot", {
-        slot: self.state.slot,
-        stream: self.state.sfutest.id,
-      });
-      var tracks = self.state.sfutest.webrtcStuff.myStream.getTracks();
-      console.log(tracks);
+      $("#camera-off").css("color", "black");
     },
     error: function (error) {
       Janus.error("***** WebRTC error:", error);
@@ -586,16 +757,16 @@ export function unPublishCamera() {
   self.vStreamDettacher(self.state.sfutest);
   $("#camera-spinner").hide();
   $("#camera-on").show();
-  $("#camera-off").css('color', 'initial');
-  self.setState({ publishedCamera: false, videoState: "initial", slot: null });
+  $("#camera-off").css("color", "initial");
+  self.setState({ publishedCamera: false, videoState: "initial" });
 }
 
-export function toggleVideoDevice(deviceId){
+export function toggleVideoDevice(deviceId) {
   var self = this;
   if (self.state.publishedCamera) {
     self.unPublishCamera();
   }
-  self.publishCamera(16, deviceId)
+  self.publishCamera(16, deviceId);
 }
 
 export function vexisitingParticipant(participantId) {
@@ -644,11 +815,9 @@ export function exitVideoRoom() {
   var self = this;
   if (this.state.sfutest) {
     self.unPublishCamera();
-   // this.state.sfutest.send({ message: { request: "unpublish" } });
     this.state.sfutest.send({ message: { request: "leave" } });
   }
 }
-
 
 export function toggleCamera() {
   var self = this;
@@ -660,26 +829,4 @@ export function toggleCamera() {
   } else {
     self.unPublishCamera();
   }
-}
-
-function initDevices(devices) {
-  var self = this;
-  navigator.mediaDevices.enumerateDevices()
-  .then(function(devices) {
-    devices.forEach(function(device) {
-      console.log(device.kind)
-      if(device.kind === 'audiooutput') {
-        $('#speakerSelect').append("<option value='"+device.deviceId+"'>"+device.label+"</option>")
-       }
-       if(device.kind === 'audioinput') {
-        $('#audioSourceSelect').append("<option value='"+device.deviceId+"'>"+device.label+"</option>")
-       }
-       if(device.kind === 'videoinput') {
-        $('#videoSourceSelect').append("<option value='"+device.deviceId+"'>"+device.label+"</option>")
-       }
-    });
-  })
-  .catch(function(err) {
-    console.log(err.name + ": " + err.message);
-  });
 }

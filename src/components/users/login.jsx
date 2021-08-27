@@ -3,6 +3,7 @@ import ModelStore from "../../stores/ModelStore";
 import * as MyActions from "../../actions/MyActions";
 import { dict } from '../../Dict';
 import { conf } from '../../conf';
+import $ from 'jquery';
 import { CountryDropdown, RegionDropdown, CountryRegionData } from 'react-country-region-selector';
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
 const AsyncTypeahead = withAsync(Typeahead);
@@ -21,6 +22,8 @@ export default class UserWizard extends React.Component {
             token: window.localStorage.getItem('token'),
             email: null,
             password: null,
+            verify: false,
+            verification: null,
         }
 
     }
@@ -45,6 +48,15 @@ export default class UserWizard extends React.Component {
 
     handleChange(obj) {
         this.setState(obj);
+        if (Object.keys(obj) && Object.keys(obj)[0] && Object.keys(obj)[0] === 'verification') {
+            if (obj['verification'].length < 6) {
+                this.setState({ disableSubmit: true });
+                $('#verification').addClass(' is-invalid ')
+            } else {
+                this.setState({ disableSubmit: false });
+                $('#verification').removeClass(' is-invalid ').addClass(' is-valid ')
+            }
+        }
     }
 
     setInstance() {
@@ -54,6 +66,9 @@ export default class UserWizard extends React.Component {
             window.localStorage.setItem('token', model.token);
             this.props.history.push("/#/events")
         }
+        if (klass === 'VERIFY') {
+            this.setState({ verify: true })
+        }
     }
 
 
@@ -62,13 +77,43 @@ export default class UserWizard extends React.Component {
         MyActions.setInstance('users/login', data);
     }
 
+    verifyForm() {
+        if (this.state.verify) {
+            return (
+                <div class="mb-3">
+                    <label class="form-label">{t['verfication_code']}</label>
+                    <input type="text" id='verification' onInput={(e) => { this.handleChange({ verification: e.target.value }) }} class="form-control ps-1 is-invalid" autocomplete="off" />
+                </div>
+            )
+        }
+    }
+
+    verified() {
+        if (this.state.verify) {
+            return (
+                <div class="alert alert-important alert-danger alert-dismissible" role="alert">
+                    <div class="d-flex">
+                        <div>
+                        </div>
+                        <div>
+                            <p>{t['your_account_is_not_verified']}</p>
+                            <p>{t['check_your_spam_folder']}</p>
+                        </div>
+                    </div>
+                    <a class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="close"></a>
+                </div>
+            )
+        }
+
+    }
+
     render() {
         return (
             <div class="page page-center">
                 <div class="container-tight py-4">
                     <React.Fragment>
                         <div class="text-center mb-4">
-                            <a href="."><img src="./static/logo.svg" height="36" alt="" /></a>
+
                         </div>
                         <div class="card card-md">
                             <div class="card-body text-center py-4 p-sm-5">
@@ -80,6 +125,7 @@ export default class UserWizard extends React.Component {
                                     {t['sign_up']}
                                 </a>
                             </div>
+
                             <div class="hr-text hr-text-center hr-text-spaceless">{t['login_now']}</div>
                             <div class="card-body">
                                 <div class="mb-3">
@@ -99,19 +145,22 @@ export default class UserWizard extends React.Component {
                                         <input type="password" onInput={(e) => { this.handleChange({ password: e.target.value }) }} class="form-control ps-1" autocomplete="off" />
                                     </div>
                                 </div>
+
+                                {this.verifyForm()}
                             </div>
                         </div>
+                        {this.verified()}
                         <div class="row align-items-center mt-3">
                             <div class="col-4">
 
                             </div>
                             <div class="col">
                                 <div class="btn-list justify-content-end">
-                                    <a href="https://auth.ut.ac.ir:8443/cas/login?service=https%3A%2F%2Fevent.ut.ac.ir%2Fusers%2Fservice" class="btn bg-azure-lt">
+                                    <a href="https://auth.ut.ac.ir:8443/cas/login?service=https%3A%2F%2Fevent.ut.ac.ir%2Fusers%2Fservice" class="btn bg-green-lt">
                                         {t['cas']}
                                     </a>
 
-                                    <button onClick={() => this.submit()} class="btn btn-success">
+                                    <button onClick={() => this.submit()} class="btn btn-primary">
                                         {t['login']}
                                     </button>
 

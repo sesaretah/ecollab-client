@@ -3,7 +3,7 @@ import { useHistory } from "react-router-dom";
 import ModelStore from "../../stores/ModelStore";
 import * as MyActions from "../../actions/MyActions";
 import { dict } from '../../Dict';
-
+const t = dict['fa']
 export default class Header extends React.Component {
 
     constructor(props) {
@@ -14,6 +14,7 @@ export default class Header extends React.Component {
         this.state = {
             token: window.localStorage.getItem('token'),
             profile: { name: '', initials: '' },
+            userAbilities: null,
         }
 
     }
@@ -28,12 +29,12 @@ export default class Header extends React.Component {
     }
 
     componentDidMount() {
-        if(this.state.token && this.state.token.length > 10){
+        if (this.state.token && this.state.token.length > 10) {
             MyActions.getInstance('profiles/my', 1, this.state.token);
         } else {
             this.props.history.push("login")
         }
-        
+
     }
 
     getInstance() {
@@ -42,6 +43,7 @@ export default class Header extends React.Component {
         if (profile && klass === 'Profile') {
             this.setState({
                 profile: profile,
+                userAbilities: profile.abilities
             });
         }
     }
@@ -56,6 +58,21 @@ export default class Header extends React.Component {
         this.setState({ token: null });
         window.localStorage.removeItem('token');
         window.location.replace('/')
+    }
+
+    settingsBtn() {
+        if (this.state.userAbilities && this.state.userAbilities.administration) {
+            return (
+                <li className="nav-item">
+                    <a className="nav-link" href="/#/settings">
+                        <span className="nav-link-icon d-md-none d-lg-inline-block">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                        <span className="nav-link-title">{t['settings']}</span>
+                    </a>
+                </li>
+            )
+        }
     }
 
 
@@ -155,6 +172,15 @@ export default class Header extends React.Component {
                                 </li>
 
                                 <li className="nav-item">
+                                    <a className="nav-link" href="/#/calendar">
+                                        <span className="nav-link-icon d-md-none d-lg-inline-block">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><rect x="4" y="5" width="16" height="16" rx="2" /><line x1="16" y1="3" x2="16" y2="7" /><line x1="8" y1="3" x2="8" y2="7" /><line x1="4" y1="11" x2="20" y2="11" /><line x1="11" y1="15" x2="12" y2="15" /><line x1="12" y1="15" x2="12" y2="18" /></svg>
+                                        </span>
+                                        <span className="nav-link-title">{t['my_calendar']}</span>
+                                    </a>
+                                </li>
+
+                                <li className="nav-item">
                                     <a className="nav-link" href="/#/profiles">
                                         <span className="nav-link-icon d-md-none d-lg-inline-block">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><circle cx="9" cy="7" r="4" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></svg>
@@ -162,6 +188,12 @@ export default class Header extends React.Component {
                                         <span className="nav-link-title">{t['users']}</span>
                                     </a>
                                 </li>
+
+                                {this.settingsBtn()}
+
+
+
+
 
 
                             </ul>

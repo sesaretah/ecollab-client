@@ -3,6 +3,7 @@ import ModelStore from "../../stores/ModelStore";
 import * as MyActions from "../../actions/MyActions";
 import { dict } from '../../Dict';
 import Header from "../header/header.jsx";
+const t = dict['fa']
 
 export default class ProfileIndex extends React.Component {
 
@@ -75,15 +76,6 @@ export default class ProfileIndex extends React.Component {
                                </div>
                             </div>
                         </div>
-                        <div class="d-flex">
-                            <a href="#" class="card-btn">
-                           
-	<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 21v-13a3 3 0 0 1 3 -3h10a3 3 0 0 1 3 3v6a3 3 0 0 1 -3 3h-9l-4 4" /><line x1="12" y1="11" x2="12" y2="11.01" /><line x1="8" y1="11" x2="8" y2="11.01" /><line x1="16" y1="11" x2="16" y2="11.01" /></svg>
-                                Message</a>
-                            <a href="#" class="card-btn">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2 text-muted" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2"></path></svg>
-                                Call</a>
-                        </div>
                     </div>
                 </div>
             )
@@ -103,8 +95,8 @@ export default class ProfileIndex extends React.Component {
                             <div className="page-header d-print-none">
                                 <div className="row align-items-center"></div>
                                 <div className="col">
-                                    <div className="page-pretitle">Overview</div>
-                                    <h2 className="page-title">Profiles</h2>
+                                    <div className="page-pretitle">{t['overview']}</div>
+                                    <h2 className="page-title">{t['profiles']}</h2>
                                 </div>
                             </div>
                         </div>

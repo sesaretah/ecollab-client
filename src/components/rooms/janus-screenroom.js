@@ -506,8 +506,8 @@ export function publishScreen(bitrate = 16, deviceId = null, stream = null) {
       data: false,
       videoSend: true,
       video: "screen",
-      screenshareFrameRate: 5,
-      screenshareWidth: 1280,
+      screenshareFrameRate: 7,
+      screenshareWidth: 1440,
       audioSend: false,
     },
 

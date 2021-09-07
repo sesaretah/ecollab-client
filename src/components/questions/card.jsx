@@ -4,7 +4,7 @@ import { dict } from "../../Dict";
 
 
 const QuestionCard = (props) => {
-    const t = dict['fa']
+    const t = dict[props.lang]
     function questions() {
         var result = []
         if (props.questions) {

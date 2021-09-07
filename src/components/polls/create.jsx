@@ -4,9 +4,10 @@ import { dict } from "../../Dict";
 import Moment from 'react-moment';
 import 'moment-timezone';
 import moment from 'jalali-moment'
-const t = dict['fa']
+
 
 const PollCard = (props) => {
+    const t = dict[props.lang]
     function pollCheckBox(poll) {
         var result = []
         var i = 0
@@ -36,7 +37,7 @@ const PollCard = (props) => {
             items.map((item) => {
                 result.push(
                     <label class="form-check">
-                        <input class="form-check-input" disabled={props.disabled ? true : false} checked={poll.outcome === i ? true : false } name='radio' type="radio" value={i} onClick={(e) => props.postPolling(id, e.target.value)} />
+                        <input class="form-check-input" disabled={props.disabled ? true : false} checked={poll.outcome === i ? true : false } name={'radio'+poll.id} type="radio" value={i} onClick={(e) => props.postPolling(id, e.target.value)} />
                         <span class="form-check-label">{item} {stats(poll, i)}</span>
                     </label>
                 )
@@ -108,11 +109,11 @@ const PollCard = (props) => {
                         <div class="form-label">{poll.content}</div>
                         <div>
                             <label class="form-check">
-                                <input class="form-check-input" style={{ marginTop: '4px' }} disabled={props.disabled ? true : false} checked={poll.outcome === 1 ? true : false } name='binary' type="radio" value='1' onClick={(e) => props.postPolling(poll.id, e.target.value)} />
+                                <input class="form-check-input" style={{ marginTop: '4px' }} disabled={props.disabled ? true : false} checked={poll.outcome === 1 ? true : false } name={'binary-'+poll.id} type="radio" value='1' onClick={(e) => props.postPolling(poll.id, e.target.value)} />
                                 <span class="form-check-label pb-1"><span class="badge bg-green-lt">{t['yes']}</span> {stats(poll, 1)}</span>
                             </label>
                             <label class="form-check">
-                                <input class="form-check-input" style={{ marginTop: '4px' }} disabled={props.disabled ? true : false} checked={poll.outcome === -1 ? true : false } name='binary' type="radio" value='-1' onClick={(e) => props.postPolling(poll.id, e.target.value)} />
+                                <input class="form-check-input" style={{ marginTop: '4px' }} disabled={props.disabled ? true : false} checked={poll.outcome === -1 ? true : false } name={'binary-'+poll.id} type="radio" value='-1' onClick={(e) => props.postPolling(poll.id, e.target.value)} />
                                 <span class="form-check-label pb-1"><span class="badge bg-red-lt">{t['no']}</span> {stats(poll, -1)}</span>
                             </label>
                         </div>
@@ -125,15 +126,15 @@ const PollCard = (props) => {
                         <div class="form-label">{poll.content}</div>
                         <div>
                             <label class="form-check">
-                                <input class="form-check-input" style={{ marginTop: '4px' }} disabled={props.disabled ? true : false} checked={poll.outcome === 1 ? true : false } name='trinary' type="radio" value='1' onClick={(e) => props.postPolling(poll.id, e.target.value)} />
+                                <input class="form-check-input" style={{ marginTop: '4px' }} disabled={props.disabled ? true : false} checked={poll.outcome === 1 ? true : false } name={'trinary-'+poll.id} type="radio" value='1' onClick={(e) => props.postPolling(poll.id, e.target.value)} />
                                 <span class="form-check-label pb-1"><span class="badge bg-green-lt">{t['yes']}</span> {stats(poll, 1)}</span>
                             </label>
                             <label class="form-check">
-                                <input class="form-check-input" style={{ marginTop: '4px' }} disabled={props.disabled ? true : false}  checked={poll.outcome === 0 ? true : false } name='trinary' type="radio" value='0' onClick={(e) => props.postPolling(poll.id, e.target.value)} />
+                                <input class="form-check-input" style={{ marginTop: '4px' }} disabled={props.disabled ? true : false}  checked={poll.outcome === 0 ? true : false } name={'trinary-'+poll.id} type="radio" value='0' onClick={(e) => props.postPolling(poll.id, e.target.value)} />
                                 <span class="form-check-label pb-1"><span class="badge bg-muted-lt">{t['abstention']}</span> {stats(poll, 0)}</span>
                             </label>
                             <label class="form-check">
-                                <input class="form-check-input" style={{ marginTop: '4px' }}  disabled={props.disabled ? true : false} checked={poll.outcome === -1 ? true : false } name='trinary' type="radio" value='-1' onClick={(e) => props.postPolling(poll.id, e.target.value)} />
+                                <input class="form-check-input" style={{ marginTop: '4px' }}  disabled={props.disabled ? true : false} checked={poll.outcome === -1 ? true : false } name={'trinary-'+poll.id} type="radio" value='-1' onClick={(e) => props.postPolling(poll.id, e.target.value)} />
                                 <span class="form-check-label pb-1"><span class="badge bg-red-lt">{t['no']}</span> {stats(poll, -1)}</span>
                             </label>
                         </div>

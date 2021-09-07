@@ -6,7 +6,7 @@ import * as MyActions from "../../actions/MyActions";
 import Cropper from 'react-easy-crop'
 import RangeSlider from 'react-bootstrap-range-slider';
 import { dict } from '../../Dict';
-const t = dict['fa']
+var t = dict['farsi']
 
 export default class CropperShow extends React.Component {
     constructor(props) {
@@ -16,6 +16,8 @@ export default class CropperShow extends React.Component {
         this.showCropper = this.showCropper.bind(this);
 
         this.state = {
+            lang: window.localStorage.getItem('lang'),
+            dir: window.localStorage.getItem('dir'),
             crop: { x: 0, y: 0 },
             zoom: 1,
             aspect: 16 / 5,
@@ -40,6 +42,7 @@ export default class CropperShow extends React.Component {
     }
 
     componentDidMount() {
+        t = dict[this.state.lang]
         MyActions.getInstance('uploads', this.props.match.params.id, this.state.token);
     }
 

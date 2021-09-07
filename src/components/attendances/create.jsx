@@ -2,9 +2,10 @@ import React from 'react'
 import ModelStore from "../../stores/ModelStore";
 import * as MyActions from "../../actions/MyActions";
 import { dict } from '../../Dict';
+import $ from 'jquery';
 import Header from "../header/header.jsx";
 import queryString from 'query-string'
-const t = dict['fa']
+var t = dict['farsi']
 export default class AttendanceCreate extends React.Component {
 
     constructor(props) {
@@ -14,10 +15,13 @@ export default class AttendanceCreate extends React.Component {
         this.getInstance = this.getInstance.bind(this);
         this.getMultipleList = this.getMultipleList.bind(this);
         this.search = this.search.bind(this);
+        this.getInstance = this.getInstance.bind(this);
 
 
         this.state = {
             token: window.localStorage.getItem('token'),
+            lang: window.localStorage.getItem('lang'),
+            dir: window.localStorage.getItem('dir'),
             title: null,
             attendances: null,
             users: null,
@@ -31,16 +35,19 @@ export default class AttendanceCreate extends React.Component {
     componentWillMount() {
         ModelStore.on("got_multiple_list", this.getMultipleList);
         ModelStore.on("set_instance", this.setInstance);
-        ModelStore.on("deleted_instance", this.getInstance);
+        ModelStore.on("deleted_instance", this.setInstance);
+        ModelStore.on("got_instance", this.getInstance);
     }
 
     componentWillUnmount() {
         ModelStore.removeListener("got_multiple_list", this.getMultipleList);
         ModelStore.removeListener("set_instance", this.setInstance);
-        ModelStore.removeListener("deleted_instance", this.getInstance);
+        ModelStore.removeListener("got_instance", this.getInstance);
+        ModelStore.removeListener("deleted_instance", this.setInstance);
     }
 
     componentDidMount() {
+        t = dict[this.state.lang]
         const value = queryString.parse(this.props.location.search);
         var attendable_type = '';
         var attendable_id = 0;
@@ -93,6 +100,14 @@ export default class AttendanceCreate extends React.Component {
         }
     }
 
+    getInstance() {
+        var klass = ModelStore.getKlass()
+        var model = ModelStore.getIntance()
+        if (klass === 'MeetingUrl') {
+          this.setState({url: model.url})
+        }
+      }
+
     setInstance() {
         MyActions.getMultipleList('attendances', this.state.page, this.state, this.state.token);
     }
@@ -122,7 +137,7 @@ export default class AttendanceCreate extends React.Component {
                                 </a>
                             </div>
                             <div class="col-auto">
-                                <a href="#">
+                                <a >
                                     <span class="avatar" >{user.initials}</span>
                                 </a>
                             </div>
@@ -170,8 +185,13 @@ export default class AttendanceCreate extends React.Component {
                     <option value='listener' selected={attendance.duty === 'listener' ? true : false}>{t['listener']}</option>
                 </select>
             )
-        }
+        }   
     }
+
+    createBigBlue(id) {
+        $('#bigblue-spinner').show();
+        MyActions.getInstance('meetings/join_bigblue', id, this.state.token);
+      }
 
     attendanceItems(attendances) {
         var result = []
@@ -195,6 +215,12 @@ export default class AttendanceCreate extends React.Component {
                             <div class="col text-truncate">
                                 <a href="#" class="text-body d-block">{user.name}</a>
                                 <small class="d-block text-muted text-truncate mt-n1">{user.bio}</small>
+                            </div>
+                            <div class="col-auto" >
+                                <a onClick={() => this.createBigBlue(attendance.attendable_id)}>
+                                    +
+                                    <div id='bigblue-spinner' class="spinner-border text-black" role="status" style={{ display: 'none' }}></div>
+                                </a>
                             </div>
                             <div class="col-auto" >
                                 {this.dutyOptions(attendance)}

@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import ModelStore from "../../stores/ModelStore";
 import * as MyActions from "../../actions/MyActions";
 import $ from 'jquery';
@@ -7,12 +7,15 @@ import { conf } from '../../conf';
 import queryString from 'query-string'
 import Header from "../header/header.jsx";
 import MeetingMasonry from "./masonry.jsx";
-import moment from 'moment-jalaali'
+import moment from 'moment-jalaali';
+import mm from 'moment';
 import DatePicker2 from 'react-datepicker2';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
-const t = dict['fa']
+var t = dict['farsi']
 
 export default class MeetingIndex extends React.Component {
 
@@ -22,20 +25,28 @@ export default class MeetingIndex extends React.Component {
         this.getList = this.getList.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.attend = this.attend.bind(this);
+        this.getInstance = this.getInstance.bind(this);
 
         this.state = {
             token: window.localStorage.getItem('token'),
+            lang: window.localStorage.getItem('lang'),
+            dir: window.localStorage.getItem('dir'),
             title: null,
             meetings: null,
             events: null,
             q: '',
-            start_from: moment(),
-            start_to: moment().add(2, 'jMonth'),
+            start_from: mm(),
+            start_to: mm().add(2, 'Month'),
             tags: [],
             page: 1,
             event_id: 0,
             pages: 0,
-            registration_status: 'all'
+            registration_status: 'all',
+            searched: false,
+            event_name: '',
+
+            isGregorian: true,
+            userAbilities: null,
         }
 
     }
@@ -45,24 +56,51 @@ export default class MeetingIndex extends React.Component {
     componentWillMount() {
         ModelStore.on("got_list", this.getList);
         ModelStore.on("set_instance", this.setInstance);
+        ModelStore.on("got_instance", this.getInstance);
     }
 
     componentWillUnmount() {
         ModelStore.removeListener("got_list", this.getList);
         ModelStore.removeListener("set_instance", this.setInstance);
+        ModelStore.removeListener("got_instance", this.getInstance);
     }
 
     componentDidMount() {
+        t = dict[this.state.lang]
+        if (this.state.lang === 'farsi') {
+            this.setState({
+                start_from: moment(),
+                start_to: moment().add(2, 'jMonth'),
+                isGregorian: false,
+            })
+        }
+        var location = window.location.href.split('#')[0].split('/')
+        var event_name = location[3]
+        if (event_name !== '') {
+            this.setState({ event_name: event_name })
+        }
         const value = queryString.parse(this.props.location.search);
         if (value.event_id) {
             this.setState({ event_id: value.event_id })
-            MyActions.getList('meetings', this.state.page, { event_id: value.event_id }, this.state.token);
+            var data = { registration_status: this.state.registration_status, event_id: value.event_id, event_name: event_name, start_from: this.state.start_from, start_to: this.state.start_to }
+            this.setState({ page: 1, searched: true }, () => {
+                MyActions.getList('meetings/search', this.state.page, data, this.state.token);
+            })
         } else {
-            MyActions.getList('meetings', this.state.page, {}, this.state.token);
+            var data = { registration_status: this.state.registration_status, start_from: this.state.start_from, event_name: event_name, start_to: this.state.start_to }
+            this.setState({ page: 1, searched: true }, () => {
+                MyActions.getList('meetings/search', this.state.page, data, this.state.token);
+            })
         }
         if (value.registration_status) {
             this.setState({ registration_status: value.registration_status })
         }
+        if (this.state.token && this.state.token.length > 10) {
+            MyActions.getInstance('profiles/my', 1, this.state.token);
+        } else {
+            this.props.history.push("login")
+        }
+
         MyActions.getList('events/related', this.state.page, {}, this.state.token);
     }
 
@@ -99,6 +137,7 @@ export default class MeetingIndex extends React.Component {
     }
 
 
+
     handleChange(obj) {
         this.setState(obj);
     }
@@ -118,6 +157,18 @@ export default class MeetingIndex extends React.Component {
                     }
                 }
             }
+        }
+    }
+
+    getInstance() {
+        var klass = ModelStore.getKlass()
+        var model = ModelStore.getIntance()
+
+        if (model && klass === 'Profile') {
+            this.setState({
+                profile: model,
+                userAbilities: model.abilities
+            });
         }
     }
 
@@ -150,8 +201,8 @@ export default class MeetingIndex extends React.Component {
         if (this.state.meetings) {
             if (this.state.meetings.length !== 0) {
                 result.push(
-                    <div class='row row-cards' data-masonry='{"percentPosition": true }' >
-                        <MeetingMasonry meetings={this.state.meetings} col={6} attend={this.attend} />
+                    <div class='card-columns'  >
+                        <MeetingMasonry meetings={this.state.meetings} col={6} attend={this.attend} lang={this.state.lang} />
                     </div>
                 )
             }
@@ -165,10 +216,10 @@ export default class MeetingIndex extends React.Component {
 
     search() {
         $('#search-spinner').show();
-        var data = { q: this.state.q, registration_status: this.state.registration_status, event_id: this.state.event_id, start_from: this.state.start_from, start_to: this.state.start_to, tags: this.state.tags }
-        this.setState({ page: 1 }, () => {
+        var data = { q: this.state.q, registration_status: this.state.registration_status, event_id: this.state.event_id, event_name: this.state.event_name, start_from: this.state.start_from, start_to: this.state.start_to, tags: this.state.tags }
+        this.setState({ page: 1, searched: true }, () => {
             MyActions.getList('meetings/search', this.state.page, data, this.state.token);
-        })        
+        })
     }
 
     attend(flag, attendable_id) {
@@ -237,9 +288,14 @@ export default class MeetingIndex extends React.Component {
 
 
     loadMore() {
+        if (this.state.searched) {
+            var data = { page: this.state.page + 1, q: this.state.q, event_id: this.state.event_id, event_name: this.state.event_name, start_from: this.state.start_from, start_to: this.state.start_to, tags: this.state.tags }
+            MyActions.getList('meetings/search', this.state.page + 1, data, this.state.token);
+        } else {
+            var data = { page: this.state.page + 1 }
+            MyActions.getList('meetings', this.state.page + 1, data, this.state.token);
+        }
 
-        var data = { id: this.state.id, page: this.state.page + 1, q: this.state.q, start_from: this.state.start_from, start_to: this.state.start_to, tags: this.state.tags }
-        MyActions.getList('meetings/search', this.state.page, data, this.state.token);
     }
 
     eventOptions() {
@@ -286,6 +342,64 @@ export default class MeetingIndex extends React.Component {
         this.setState({ registration_status: e })
     }
 
+    calendarType() {
+        if (this.state.lang === 'farsi') {
+            return (
+                <React.Fragment>
+                    <label class="form-label ">{t['date_from']}<span class="form-label-description"></span></label>
+                    <DatePicker2
+                        isGregorian={this.state.isGregorian}
+                        onChange={value => { this.setState({ start_from: value }) }}
+                        value={this.state.start_from}
+                    />
+                    <label class="form-label mt-2">{t['date_to']}<span class="form-label-description"></span></label>
+                    <DatePicker2
+                        isGregorian={this.state.isGregorian}
+                        onChange={value => { this.setState({ start_to: value }) }}
+                        value={this.state.start_to}
+                    />
+                </React.Fragment>
+            )
+        } else {
+            return (
+                <React.Fragment>
+                    <label class="form-label ">{t['date_from']}<span class="form-label-description"></span></label>
+                    <DatePicker
+                        onChange={value => { this.setState({ start_from: value }) }}
+                        showTimeSelect
+                        timeIntervals={15}
+                        timeCaption="time"
+                        dateFormat="yyyy/MM/dd HH:mm"
+                        selected={mm(this.state.start_from).toDate()}
+                        className='datepicker-input'
+                    />
+                    <label class="form-label mt-2">{t['date_to']}<span class="form-label-description"></span></label>
+                    <DatePicker
+                        onChange={value => { this.setState({ start_to: value }) }}
+                        showTimeSelect
+                        timeIntervals={15}
+                        timeCaption="time"
+                        dateFormat="yyyy/MM/dd HH:mm"
+                        selected={mm(this.state.start_to).toDate()}
+                        className='datepicker-input'
+                    />
+                </React.Fragment>
+            )
+        }
+    }
+
+    createBtn() {
+        if (this.state.userAbilities && this.state.userAbilities.create_event) {
+            return (
+                <div class="btn-list">
+                    <a href={"/#/meeting/create"} class="btn btn-primary"  >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        {t['create_meeting']}
+                    </a>
+                </div>
+            )
+        }
+    }
 
     render() {
 
@@ -302,9 +416,7 @@ export default class MeetingIndex extends React.Component {
                                         <h2 className="page-title">{t['meetings']}</h2>
                                     </div>
                                     <div class="col-auto ms-auto d-print-none">
-                                        <div class="btn-list">
-
-                                        </div>
+                                        {this.createBtn()}
                                     </div>
                                 </div>
                             </div>
@@ -336,18 +448,8 @@ export default class MeetingIndex extends React.Component {
                                                     {this.eventOptions()}
                                                 </div>
                                                 <div class="mb-3" style={{ width: '100%' }}>
-                                                    <label class="form-label ">{t['date_from']}<span class="form-label-description"></span></label>
-                                                    <DatePicker2
-                                                        isGregorian={false}
-                                                        onChange={value => { this.setState({ start_from: value }) }}
-                                                        value={moment(this.state.start_from)}
-                                                    />
-                                                    <label class="form-label mt-2">{t['date_to']}<span class="form-label-description"></span></label>
-                                                    <DatePicker2
-                                                        isGregorian={false}
-                                                        onChange={value => { this.setState({ start_to: value }) }}
-                                                        value={moment(this.state.start_to)}
-                                                    />
+
+                                                    {this.calendarType()}
                                                 </div>
 
                                                 <div class="mb-3">

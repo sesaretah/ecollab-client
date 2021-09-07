@@ -13,7 +13,7 @@ import DatePicker2 from 'react-datepicker2';
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
-const t = dict['fa']
+var t = dict['farsi']
 
 export default class QuestionCreate extends React.Component {
 
@@ -24,6 +24,8 @@ export default class QuestionCreate extends React.Component {
 
     this.state = {
       token: window.localStorage.getItem('token'),
+      lang: window.localStorage.getItem('lang'),
+      dir: window.localStorage.getItem('dir'),
       content: null,
       tags: [],
       is_private: false,
@@ -44,6 +46,7 @@ export default class QuestionCreate extends React.Component {
   }
 
   componentDidMount() {
+    t = dict[this.state.lang]
     var self = this;
     const value = queryString.parse(this.props.location.search);
     var questionable_type = '';

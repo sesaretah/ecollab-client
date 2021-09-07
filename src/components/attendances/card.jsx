@@ -4,13 +4,16 @@ import { dict } from "../../Dict";
 
 
 const AttendanceCard = (props) => {
-    const t = dict['fa']
+    var t = dict[props.lang]
     function attendees() {
         var result = []
         if (props.attendees) {
             props.attendees.map((attendee) => {
                 result.push(<span class="avatar avatar-sm avatar-rounded" >{attendee.initials}</span>)
             });
+        }
+        if(props.attendeesCount && props.attendeesCount > 10){
+            result.push(<span class="avatar avatar-sm avatar-rounded" >{props.attendeesCount - 10}+</span>)
         }
 
         return result

@@ -12,7 +12,7 @@ import EventInfo from "../events/info.jsx";
 import randomColor from "randomcolor";
 import $ from 'jquery';
 import Quill from 'quill';
-const t = dict['fa']
+var t = dict['farsi']
 
 export default class EventShow extends React.Component {
 
@@ -27,6 +27,8 @@ export default class EventShow extends React.Component {
 
     this.state = {
       token: window.localStorage.getItem('token'),
+      lang: window.localStorage.getItem('lang'),
+      dir: window.localStorage.getItem('dir'),
       title: null,
       id: null,
       event_type: null,
@@ -62,6 +64,7 @@ export default class EventShow extends React.Component {
   }
 
   componentDidMount() {
+    t = dict[this.state.lang]
     MyActions.getInstance('events', this.props.match.params.id, this.state.token);
     var quillOne = new Quill('#editor-one', {
       //theme: 'snow',
@@ -354,13 +357,14 @@ export default class EventShow extends React.Component {
                       toggleCalendar={this.toggleCalendar} id={this.state.id}
                       is_admin={this.state.is_admin} attend={this.attend}
                       attending={this.state.attending}
+                      lang={this.state.lang}
                     />
-                    <AttendanceCard attendees={this.state.attendees} attendable_type='event' attendable_id={this.state.id} is_admin={this.state.is_admin} />
+                    
 
-                    <MeetingCard meetings={this.state.meetings} col='12' id={this.state.id} is_admin={this.state.is_admin} />
+                    <MeetingCard meetings={this.state.meetings} col='12' id={this.state.id} is_admin={this.state.is_admin} lang={this.state.lang} />
 
                     <div class="card mb-3">
-                    <div class="card-status-top bg-indigo"></div>
+                      <div class="card-status-top bg-azure"></div>
                       <div class="card-header">
                         <h3 class="card-title">{t['pages']}</h3>
                         <ul class="nav nav-pills card-header-pills">
@@ -373,7 +377,7 @@ export default class EventShow extends React.Component {
                     </div>
 
                     <div class="card mb-3">
-                    <div class="card-status-top bg-muted"></div>
+                      <div class="card-status-top bg-muted"></div>
                       <div class="card-header">
                         <h3 class="card-title">{t['resources']}</h3>
                         <ul class="nav nav-pills card-header-pills">
@@ -384,6 +388,8 @@ export default class EventShow extends React.Component {
                         {this.uploads()}
                       </div>
                     </div>
+
+                    <AttendanceCard attendees={this.state.attendees} attendable_type='event' attendable_id={this.state.id} is_admin={this.state.is_admin} lang={this.state.lang} />
 
                   </div>
 

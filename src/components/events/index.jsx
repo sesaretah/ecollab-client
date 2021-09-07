@@ -6,13 +6,14 @@ import { dict } from '../../Dict';
 import { conf } from '../../conf';
 import Header from "../header/header.jsx";
 import EventCard from "./card.jsx";
-import moment from 'moment-jalaali'
+import moment from 'moment-jalaali';
+import mm from 'moment';
 import DatePicker2 from 'react-datepicker2';
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
 
-const t = dict['fa']
+var t = dict['farsi']
 
 export default class EventIndex extends React.Component {
 
@@ -28,16 +29,19 @@ export default class EventIndex extends React.Component {
 
         this.state = {
             token: window.localStorage.getItem('token'),
+            lang: window.localStorage.getItem('lang'),
+            dir: window.localStorage.getItem('dir'),
             title: null,
             events: null,
             allTags: null,
             q: '',
-            start_from: moment(),
-            start_to: moment().add(2, 'jMonth'),
+            start_from: mm(),
+            start_to: mm().add(2, 'Month'),
             tags: [],
             page: 1,
             pages: 0,
             userAbilities: null,
+            isGregorian: true,
         }
 
     }
@@ -56,12 +60,28 @@ export default class EventIndex extends React.Component {
     }
 
     componentDidMount() {
-        MyActions.getList('events', this.state.page, {}, this.state.token);
+        t = dict[this.state.lang]
+        if(this.state.lang === 'farsi') {
+            this.setState({
+                start_from: moment(),
+                start_to: moment().add(2, 'jMonth'),
+                isGregorian: false,
+            })
+        }
+        //MyActions.getList('events', this.state.page, {}, this.state.token);
         //MyActions.getList('tags/top', this.state.page, {}, this.state.token);
+        var data = {start_from: this.state.start_from, start_to: this.state.start_to}
+        MyActions.getList('events/search', this.state.page, data, this.state.token);
         if (this.state.token && this.state.token.length > 10) {
             MyActions.getInstance('profiles/my', 1, this.state.token);
         } else {
             this.props.history.push("login")
+        }
+
+        var location = window.location.href.split('#')[0].split('/')
+        var event_name = location[3]
+        if(event_name !== ''){
+            this.props.history.push("meetings")
         }
     }
 
@@ -174,7 +194,7 @@ export default class EventIndex extends React.Component {
                             </div>
                         </div>
                     </div>
-                    <EventCard events={this.state.events} col={8} />
+                    <EventCard events={this.state.events} col={8} lang={this.state.lang} />
                 </React.Fragment>
             )
         } else {
@@ -188,7 +208,7 @@ export default class EventIndex extends React.Component {
             if (this.state.events.length !== 0) {
                 result.push(
                     <div class='row row-cards' data-masonry='{"percentPosition": true }' >
-                        <EventCard events={this.state.events} col={6} attend={this.attend} />
+                        <EventCard events={this.state.events} col={6} attend={this.attend} lang={this.state.lang}/>
                     </div>
                 )
             }
@@ -301,6 +321,18 @@ export default class EventIndex extends React.Component {
         }
     }
 
+    calendarType(date) {
+        if (this.state.lang === 'farsi') {
+            return (
+                moment(date)
+            )
+        } else {
+            return (
+                mm(date)
+            )
+        }
+    }
+
 
     render() {
 
@@ -347,15 +379,17 @@ export default class EventIndex extends React.Component {
                                                 <div class="mb-3" style={{ width: '100%' }}>
                                                     <label class="form-label ">{t['date_from']}<span class="form-label-description"></span></label>
                                                     <DatePicker2
-                                                        isGregorian={false}
+                                                        isGregorian={this.state.isGregorian}
+                                                        timePicker={false}
                                                         onChange={value => { this.setState({ start_from: value }) }}
-                                                        value={moment(this.state.start_from)}
+                                                        value={this.calendarType(this.state.start_from)}
                                                     />
                                                     <label class="form-label mt-2">{t['date_to']}<span class="form-label-description"></span></label>
                                                     <DatePicker2
-                                                        isGregorian={false}
+                                                        isGregorian={this.state.isGregorian}
+                                                        timePicker={false}
                                                         onChange={value => { this.setState({ start_to: value }) }}
-                                                        value={moment(this.state.start_to)}
+                                                        value={this.calendarType(this.state.start_to)}
                                                     />
                                                 </div>
 

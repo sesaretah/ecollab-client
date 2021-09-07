@@ -9,7 +9,7 @@ import MeetingMasonry from "../meetings/masonry.jsx";
 import moment from 'moment-jalaali'
 import DatePicker2 from 'react-datepicker2';
 import randomColor from "randomcolor";
-const t = dict['fa']
+var t = dict['farsi']
 export default class MyCalendar extends React.Component {
 
     constructor(props) {
@@ -22,6 +22,8 @@ export default class MyCalendar extends React.Component {
 
         this.state = {
             token: window.localStorage.getItem('token'),
+            lang: window.localStorage.getItem('lang'),
+            dir: window.localStorage.getItem('dir'),
             meetings: [],
             calendar: false,
             today: moment(),
@@ -43,6 +45,7 @@ export default class MyCalendar extends React.Component {
     }
 
     componentDidMount() {
+        t = dict[this.state.lang]
         MyActions.getList('meetings/my', this.state.page, {}, this.state.token);
 
     }
@@ -113,7 +116,7 @@ export default class MyCalendar extends React.Component {
             if (this.state.selectedMeeting.length !== 0) {
                 result.push(
                     <div class='row row-cards' data-masonry='{"percentPosition": true }' >
-                        <MeetingMasonry meetings={this.state.selectedMeeting} col={6} attend={this.attend} />
+                        <MeetingMasonry meetings={this.state.selectedMeeting} col={6} attend={this.attend} lang={this.state.lang} />
                     </div>
                 )
             }
@@ -144,7 +147,7 @@ export default class MyCalendar extends React.Component {
 
 
     render() {
-        const t = dict['fa']
+      
         return (
             <body className="antialiased">
                 <div className="wrapper">

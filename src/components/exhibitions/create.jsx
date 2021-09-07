@@ -14,7 +14,7 @@ import {
 
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
-const t = dict['fa']
+var t = dict['farsi']
 
 export default class ExhibitionCreate extends React.Component {
 
@@ -32,6 +32,8 @@ export default class ExhibitionCreate extends React.Component {
 
     this.state = {
       token: window.localStorage.getItem('token'),
+      lang: window.localStorage.getItem('lang'),
+      dir: window.localStorage.getItem('dir'),
       title: null,
       id: null,
       info: null,
@@ -63,10 +65,17 @@ export default class ExhibitionCreate extends React.Component {
   }
 
   componentDidMount() {
+    t = dict[this.state.lang]
     if (this.props.match.params.id) {
       MyActions.getInstance('exhibitions', this.props.match.params.id, this.state.token);
     }
-    MyActions.getList('events/owner', this.state.page, {}, this.state.token);
+
+    var location = window.location.href.split('#')[0].split('/')
+    var event_name = location[3]
+    if(event_name !== ''){
+        this.setState({ event_name: event_name })
+    }
+    MyActions.getList('events/owner', this.state.page, {event_name: event_name}, this.state.token);
   }
 
   deleteInstance() {
@@ -213,7 +222,7 @@ export default class ExhibitionCreate extends React.Component {
   eventOptions() {
     var result = []
     if (this.state.events) {
-      var options = [<option value=''></option>]
+      var options = []
 
       this.state.events.map((event) => {
         options.push(
@@ -237,7 +246,7 @@ export default class ExhibitionCreate extends React.Component {
 
     return (
       <body className="antialiased">
-        <Validation items={this.state.validationItems} modal={this.modal} />
+        <Validation items={this.state.validationItems} modal={this.modal} lang={this.state.lang}/>
         <div className="wrapper">
           <Header history={this.props.history} />
           <div className="page-wrapper">

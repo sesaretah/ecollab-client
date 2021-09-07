@@ -2,13 +2,15 @@ import React from "react";
 import crypto from 'crypto-js';
 import { dict } from "../../Dict";
 import { v4 as uuidv4 } from 'uuid';
-import moment from 'jalali-moment'
+import moment from 'jalali-moment';
+import mm from 'moment';
+
 moment.locale('fa', { useGregorianParser: true });
 
-const t = dict['fa']
+
 
 const EventCard = (props) => {
-
+    const t = dict[props.lang]
     function formatGregorianDate(gregorianDate) {
         var date = new Date(gregorianDate);
         var day = date.getDate();
@@ -90,6 +92,19 @@ const EventCard = (props) => {
         }
     }
 
+
+    function calendarType(date) {
+        if (props.lang === 'farsi') {
+            return (
+                moment(formatGregorianDate(date)).format('jYYYY/jMM/jDD')
+            )
+        } else {
+            return (
+                mm(date).format('YYYY/MM/DD')
+            )
+        }
+    }
+
     function eventItems() {
         var result = []
         if (props.events) {
@@ -116,13 +131,13 @@ const EventCard = (props) => {
                                     <div className="col-md-6">
                                         <h4>{t['meeting_start_time']}:</h4>
                                         <div class="text-muted mb-3">
-                                            {moment(formatGregorianDate(event.start_date)).format('HH:mm jYYYY/jMM/jDD')}
+                                            {calendarType(event.start_date)}
                                         </div>
                                     </div>
                                     <div className="col-md-6">
                                         <h4>{t['meeting_end_time']}:</h4>
                                         <div class="text-muted mb-3">
-                                            {moment(formatGregorianDate(event.end_date)).format('HH:mm YYYY/MM/DD')}
+                                            {calendarType(event.end_date)}
                                         </div>
                                     </div>
                                 </div>

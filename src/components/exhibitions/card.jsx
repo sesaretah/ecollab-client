@@ -5,10 +5,10 @@ import { v4 as uuidv4 } from 'uuid';
 import moment from 'jalali-moment'
 moment.locale('fa', { useGregorianParser: true });
 
-const t = dict['fa']
 
 const ExhibitionCard = (props) => {
 
+    var  t = dict[props.lang]
     function formatGregorianDate(gregorianDate) {
         var date = new Date(gregorianDate);
         var day = date.getDate();

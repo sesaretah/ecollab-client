@@ -15,6 +15,7 @@ import {
 } from "../common/validate.js";
 
 const server = conf.server;
+var t = dict['farsi']
 
 export default class FlyerCreate extends React.Component {
 
@@ -29,6 +30,8 @@ export default class FlyerCreate extends React.Component {
 
         this.state = {
             token: window.localStorage.getItem('token'),
+            lang: window.localStorage.getItem('lang'),
+            dir: window.localStorage.getItem('dir'),
             title: null,
             id: null,
             content: null,
@@ -56,6 +59,7 @@ export default class FlyerCreate extends React.Component {
     }
 
     componentDidMount() {
+        t = dict[this.state.lang]
         var self = this;
         const value = queryString.parse(this.props.location.search);
         var advertisable_type = '';
@@ -195,10 +199,9 @@ export default class FlyerCreate extends React.Component {
 
     render() {
         const { is_default } = this.state;
-        const t = dict['fa'];
         return (
             <body className="antialiased">
-                <Validation items={this.state.validationItems} modal={this.modal}/>
+                <Validation items={this.state.validationItems} modal={this.modal} lang={this.state.lang}/>
                 <div className="wrapper">
                     <Header history={this.props.history} />
                     <div className="page-wrapper">

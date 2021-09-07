@@ -73,6 +73,7 @@ export function vsessionCreate(room) {
               Janus.debug("Event: " + event);
               if (event) {
                 if (event === "joined") {
+                  console.log('><><><><><>', msg)
                   // Publisher/manager created, negotiate WebRTC and attach to existing feeds, if any
                   //myid = msg["id"];
                   //mypvtid = msg["private_id"];
@@ -86,7 +87,7 @@ export function vsessionCreate(room) {
                       " with ID " +
                       msg["id"]
                   );
-                  var role = this.currentRole();
+                  var role = self.currentRole();
                   self.vAddParticipant(
                     msg["id"],
                     self.state.fullname +
@@ -107,7 +108,7 @@ export function vsessionCreate(room) {
                   // Any new feed to attach to?
                   if (msg["publishers"]) {
                     var list = msg["publishers"];
-                    Janus.debug(
+                    console.debug(
                       "Got a list of available publishers/feeds:",
                       list
                     );
@@ -220,7 +221,7 @@ export function vsessionCreate(room) {
                     if (remoteFeed != null) {
                       remoteFeed.detach();
                     }
-                    self.removeParticipant(leaving);
+                    self.vremoveParticipant(leaving);
                   } else if (msg["unpublished"]) {
                     // One of the publishers has unpublished?
                     var unpublished = msg["unpublished"];
@@ -238,7 +239,7 @@ export function vsessionCreate(room) {
                       remoteFeed.detach();
                       self.vStreamDettacher(remoteFeed);
                     }
-                    self.removeParticipant(unpublished);
+                    self.vremoveParticipant(unpublished);
 
                     self.setState({
                       feeds: self.state.feeds.filter(
@@ -328,7 +329,6 @@ export function vNewRemoteFeed(
   var self = this;
   var name = display.split("§")[0];
   var role = display.split("§")[4];
-  console.log(">>>>>>", role);
   //console.log('88888888', display)
   // A new feed has been published, create a new plugin handle and attach to it as a subscriber
   var remoteFeed = null;
@@ -628,7 +628,7 @@ export function vStreamAttacher(feed, display = "") {
       document.getElementById("video-" + feed.id),
       feed.webrtcStuff.remoteStream
     );
-    self.disher("Dish", "Camera");
+    self.disher('', "Dish", "Camera");
   }
   if (feed.id && feed.webrtcStuff && feed.webrtcStuff.myStream) {
     if (self.state.isSata) {
@@ -658,9 +658,9 @@ export function vStreamAttacher(feed, display = "") {
       feed.webrtcStuff.myStream
     );
     if (self.state.isSata) {
-      self.disher("myDish", "myCamera");
+      self.disher('', "myDish", "myCamera");
     } else {
-      self.disher("Dish", "Camera");
+      self.disher('', "Dish", "Camera");
     }
   }
   $("#video-" + feed.id).css("width", "inherit");
@@ -670,7 +670,7 @@ export function vStreamDettacher(feed) {
   if (feed.id) {
     $("#video-" + feed.id).remove();
     $("#d-" + feed.id).remove();
-    this.disher("Dish", "Camera");
+    this.disher('', "Dish", "Camera");
   }
 }
 
@@ -706,7 +706,7 @@ export function publishCamera(bitrate = 8, deviceId = null) {
   var device = true;
   if (self.state.is_moderator) {
     video = "hires-16:9";
-    bitrate = 64;
+    bitrate = 16;
   } else {
     video = "lowres";
   }
@@ -819,13 +819,13 @@ export function exitVideoRoom() {
   }
 }
 
-export function toggleCamera() {
+export function toggleCamera(deviceId= null) {
   var self = this;
   $("#camera-spinner").show();
   $("#camera-off").hide();
   $("#camera-on").hide();
   if (!self.state.publishedCamera) {
-    self.publishCamera();
+    self.publishCamera(8,deviceId);
   } else {
     self.unPublishCamera();
   }

@@ -4,9 +4,10 @@ import { dict } from "../../Dict";
 import Moment from 'react-moment';
 import 'moment-timezone';
 import moment from 'jalali-moment'
-const t = dict['fa']
+
 
 const MeetingCard = (props) => {
+    var t = dict[props.lang]
     function formatGregorianDate(gregorianDate) {
         var date = new Date(gregorianDate);
         var day = date.getDate();

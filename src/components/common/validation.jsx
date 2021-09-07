@@ -3,10 +3,10 @@ import crypto from 'crypto-js';
 import { dict } from "../../Dict";
 import { Calendar } from 'react-datepicker2';
 import moment from 'moment-jalaali'
-const t = dict['fa']
+
 
 const Validation = (props) => {
-
+    const t = dict[props.lang]
     function items() {
         var result = []
         if (props.items) {

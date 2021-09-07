@@ -4,16 +4,19 @@ import { dict } from '../../Dict';
 import { conf } from "../../conf";
 import Quill from 'quill';
 import $ from 'jquery';
-const t = dict['fa']
+var t = dict['farsi']
 class FlyerCard extends Component {
     constructor(props) {
         super(props);
 
 
         this.state = {
+            lang: window.localStorage.getItem('lang'),
+            dir: window.localStorage.getItem('dir'),
             quillOne: null,
             cover: null,
             qillLoaded: false,
+
         }
     }
 
@@ -40,6 +43,7 @@ class FlyerCard extends Component {
 
 
     componentDidMount() {
+        t = dict[this.state.lang]
         var quillOne = new Quill('#editor-one', {
             readOnly: true,
         });

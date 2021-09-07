@@ -4,7 +4,7 @@ export function sessionCreate(room) {
   var self = this;
   console.log("Trying to connect to", room);
   Janus.init({
-    debug: "none",
+    debug: "all",
     callback: function () {
       var janus = new Janus({
         server: self.state.server,
@@ -71,12 +71,13 @@ export function sessionCreate(room) {
                   self.participantChangeStatus(msg["id"], false);
                 }
                 if (event === "joined") {
+                  var role = self.currentRole();
                   // Successfully joined, negotiate WebRTC now
                   if (msg["id"]) {
                     self.setState({
                       myid: msg["id"],
                     });
-                    Janus.log(
+                    console.log(
                       "Successfully joined room " +
                         msg["room"] +
                         " with ID " +
@@ -84,7 +85,7 @@ export function sessionCreate(room) {
                         "with role:" +
                         self.currentRole()
                     );
-                    var role = self.currentRole();
+                    
                     self.addParticipant(
                       msg["id"],
                       self.state.fullname +
@@ -101,30 +102,7 @@ export function sessionCreate(room) {
                     if (!self.state.webrtcUp) {
                       self.setState({ webrtcUp: true });
                       // Publish our stream
-                      self.state.mixertest.createOffer({
-                        media: {
-                          video: false,
-                          audio: { echoCancellation: true },
-                        }, // This is an audio only room
-                        success: function (jsep) {
-                          Janus.debug("Got SDP!", jsep);
-                          var muted = true;
-                          if (
-                            self.state.reloadParams &&
-                            self.state.reloadParams["mic"]
-                          ) {
-                            muted = false;
-                          }
-                          var publish = { request: "configure", muted: muted };
-                          self.state.mixertest.send({
-                            message: publish,
-                            jsep: jsep,
-                          });
-                        },
-                        error: function (error) {
-                          Janus.error("WebRTC error:", error);
-                        },
-                      });
+                      self.joinAudioRoom();
                     }
                   }
                   // Any room participant?
@@ -256,14 +234,16 @@ export function sessionCreate(room) {
             onremotestream: function (stream) {
               if ($("#roomaudio").length === 0) {
                 $("#mixedaudio").append(
-                  '<audio class="rounded centered" id="roomaudio" width="100%" height="100%" autoplay/>'
+                  '<audio class="rounded centered" id="roomaudio"  width="100%" height="100%" autoplay/>'
                 );
+              }
                 Janus.attachMediaStream(
                   document.getElementById("roomaudio"),
                   stream
                 );
+                console.log('stream', stream, 'attached to', $("#mixedaudio"))
                 self.setState({ remoteStream: stream });
-              }
+              //}
             },
             oncleanup: function () {
               Janus.log(" ::: Got a cleanup notification :::");
@@ -279,14 +259,61 @@ export function sessionCreate(room) {
   });
 }
 
+export function joinAudioRoom(){
+  var self = this;
+  self.state.mixertest.createOffer({
+    media: {
+      video: false,
+      audio: { echoCancellation: true, deviceId: self.state.microphoneDevice },
+    }, // This is an audio only room
+    success: function (jsep) {
+      Janus.debug("Got SDP!", jsep);
+      var publish = { request: "configure", muted: self.state.muted };
+      self.state.mixertest.send({
+        message: publish,
+        jsep: jsep,
+      });
+    },
+    error: function (error) {
+      
+      console.error("WebRTC error:", error);
+      self.setState({errorMessage: error.message})
+      self.joinAudioRoomWOMic();
+    },
+  });
+}
+
+export function joinAudioRoomWOMic(){
+  console.log('Connecting without Mic ....');
+  var self = this;
+  self.state.mixertest.createOffer({
+    media: { video: false, audioSend: false, audioRecv: true }, // This is an audio only room
+    success: function (jsep) {
+      Janus.debug("Got SDP!", jsep);
+      var publish = { request: "configure",  muted: true };
+      self.state.mixertest.send({
+        message: publish,
+        jsep: jsep,
+      });
+    },
+    error: function (error) {
+      console.error("WebRTC error:", error);
+      self.setState({errorMessage: error.message})
+    },
+  });
+}
+
+
 export function registerUsername(room) {
+
+
   var self = this;
   var role = this.currentRole();
+  console.log("registering user to audiobridge to room ",parseInt(room) , ' with role ' ,role);
   var register = {
     request: "join",
     room: parseInt(room),
     pin: self.state.pin,
-    // secret: self.state.secret,
     display:
       self.state.fullname +
       " §" +
@@ -308,8 +335,8 @@ export function changeUsername(room) {
   console.log("changing role to ..", role, parseInt(room));
   var register = {
     request: "configure",
-    //room: parseInt(room),
-    //pin: self.state.vpin,
+    room: parseInt(room),
+    pin: self.state.vpin,
     display:
       self.state.fullname +
       " §" +
@@ -406,7 +433,7 @@ export function changeParticipant(id, p) {
   var self = this;
   var participant = p.split("§");
   if (participant[1] && participant[4]) {
-    console.log('%%%%%%%', participant[1], id)
+    //console.log('%%%%%%%', participant[1], id)
     self.setState(
       {
         participants: self.state.participants.filter(

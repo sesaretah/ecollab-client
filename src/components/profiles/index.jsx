@@ -3,7 +3,7 @@ import ModelStore from "../../stores/ModelStore";
 import * as MyActions from "../../actions/MyActions";
 import { dict } from '../../Dict';
 import Header from "../header/header.jsx";
-const t = dict['fa']
+var t = dict['farsi']
 
 export default class ProfileIndex extends React.Component {
 
@@ -15,6 +15,8 @@ export default class ProfileIndex extends React.Component {
 
         this.state = {
             token: window.localStorage.getItem('token'),
+            lang: window.localStorage.getItem('lang'),
+            dir: window.localStorage.getItem('dir'),
             profiles: [],
         }
 
@@ -32,6 +34,7 @@ export default class ProfileIndex extends React.Component {
     }
 
     componentDidMount() {
+        t = dict[this.state.lang]
         MyActions.getList('profiles', this.state.page, {}, this.state.token);
     }
 

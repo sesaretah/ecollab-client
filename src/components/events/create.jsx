@@ -66,6 +66,7 @@ export default class EventCreate extends React.Component {
     if (this.props.match.params.id) {
       MyActions.getInstance('events', this.props.match.params.id, this.state.token);
     }
+
   }
 
   deleteInstance() {
@@ -281,7 +282,7 @@ export default class EventCreate extends React.Component {
 
 
                           <div class="mb-3">
-                            <label class="form-label">{t['meeting_start_time']}<span class="form-label-description"></span></label>
+                            <label class="form-label">{t['event_start_date']}<span class="form-label-description"></span></label>
                             <DatePicker2
                               timePicker={false}
                               isGregorian={false}
@@ -291,7 +292,7 @@ export default class EventCreate extends React.Component {
                           </div>
 
                           <div class="mb-3">
-                            <label class="form-label">{t['meeting_start_time']}<span class="form-label-description"></span></label>
+                            <label class="form-label">{t['event_end_date']}<span class="form-label-description"></span></label>
                             <DatePicker2
                               timePicker={false}
                               isGregorian={false}

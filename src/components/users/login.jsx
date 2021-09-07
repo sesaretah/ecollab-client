@@ -8,7 +8,7 @@ import { CountryDropdown, RegionDropdown, CountryRegionData } from 'react-countr
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
-const t = dict['fa']
+var t = dict['farsi']
 
 export default class UserWizard extends React.Component {
 
@@ -20,6 +20,8 @@ export default class UserWizard extends React.Component {
 
         this.state = {
             token: window.localStorage.getItem('token'),
+            lang: window.localStorage.getItem('lang'),
+            dir: window.localStorage.getItem('dir'),
             email: null,
             password: null,
             verify: false,
@@ -32,6 +34,7 @@ export default class UserWizard extends React.Component {
 
     componentWillMount() {
         ModelStore.on("set_instance", this.setInstance);
+        t = dict[this.state.lang]
     }
 
     componentWillUnmount() {
@@ -39,9 +42,7 @@ export default class UserWizard extends React.Component {
     }
 
     componentDidMount() {
-        if (this.state.token && this.state.token !== '') {
-            //  MyActions.getInstance('profiles/my', '1', this.state.token);
-        }
+        document.dir = this.state.dir
     }
 
 
@@ -107,6 +108,36 @@ export default class UserWizard extends React.Component {
 
     }
 
+    languageBtn() {
+        return (
+
+                    <div class="dropdown">
+                        <button type="button" onClick={() => this.setState({ langBtnActive: !this.state.langBtnActive })} className={this.state.langBtnActive ? "btn btn-secondary dropdown-toggle show" : "btn btn-secondary dropdown-toggle"} data-bs-toggle="dropdown">
+                            <span className='mx-1'>Language</span>
+                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 7h7m-2 -2v2a5 8 0 0 1 -5 8m1 -4a7 4 0 0 0 6.7 4" /><path d="M11 19l4 -9l4 9m-.9 -2h-6.2" /></svg>
+                        </button>
+                        <div className={this.state.langBtnActive ? "dropdown-menu show" : "dropdown-menu"}>
+                            <a class="dropdown-item" onClick={() => this.changeLang('farsi', 'rtl')}>
+                                فارسی
+                            </a>
+                            <a class="dropdown-item" onClick={() => this.changeLang('english', 'ltr')}>
+                                English
+                            </a>
+                        </div>
+                    </div>
+
+
+        )
+    }
+
+    changeLang(lang, dir) {
+        window.localStorage.setItem('lang', lang)
+        window.localStorage.setItem('dir', dir)
+        window.location.reload()
+    }
+
+    
+
     render() {
         return (
             <div class="page page-center">
@@ -117,7 +148,7 @@ export default class UserWizard extends React.Component {
                         </div>
                         <div class="card card-md">
                             <div class="card-body text-center py-4 p-sm-5">
-                                <img src="./static/illustrations/undraw_sign_in_e6hj.svg" height="128" class="mb-n2" alt="" />
+                                {this.languageBtn()}
                                 <h1 class="mt-5">{t['welcome']}</h1>
                                 <p class="text-muted">{t['welcome_note']}</p>
                                 <p class="text-muted">{t['if_not_registered']}</p>

@@ -3,12 +3,13 @@ import crypto from 'crypto-js';
 import { dict } from "../../Dict";
 import { v4 as uuidv4 } from 'uuid';
 import moment from 'jalali-moment'
+import mm from 'moment'
 moment.locale('fa', { useGregorianParser: true });
 
-const t = dict['fa']
+
 
 const MeetingMasonry = (props) => {
-
+    var t = dict[props.lang]
     function formatGregorianDate(gregorianDate) {
         var date = new Date(gregorianDate);
         var day = date.getDate();
@@ -24,7 +25,7 @@ const MeetingMasonry = (props) => {
     function cardCover(meeting) {
         if (meeting.cover) {
             return (
-                <a href={'/#/meetings/' + meeting.id}>
+                <a href={'#/meetings/' + meeting.id}>
                     <div class="card-img-top img-responsive img-responsive-16by9" style={{ backgroundImage: "url(" + meeting.cover + ")" }}></div>
                 </a>
             )
@@ -47,7 +48,7 @@ const MeetingMasonry = (props) => {
                 return (
                     <div className="card-footer" style={{ display: 'initial' }}>
                         <div class="d-flex">
-                            <a href={'/#/meetings/' + meeting.id} class="btn btn-facebook ms-auto mx-1">
+                            <a href={'#/meetings/' + meeting.id} class="btn btn-facebook ms-auto mx-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><circle cx="12" cy="12" r="2" /><path d="M12 19c-4 0 -7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7c-.42 .736 -.858 1.414 -1.311 2.033" /><path d="M15 19l2 2l4 -4" /></svg>
                                 {t['view']}
                             </a>
@@ -77,7 +78,7 @@ const MeetingMasonry = (props) => {
     function meetingLink(meeting) {
         if (meeting.attending) {
             return (
-                <a href={'/#/meetings/' + meeting.id}>
+                <a href={'#/meetings/' + meeting.id}>
                     {meeting.title}
                 </a>
             )
@@ -88,14 +89,27 @@ const MeetingMasonry = (props) => {
         }
     }
 
+    function calendarType(date) {
+        if (props.lang === 'farsi') {
+            return (
+                moment(formatGregorianDate(date)).format('HH:mm jYYYY/jMM/jDD')
+            )
+        } else {
+            return (
+                mm(date).format('YYYY/MM/DD HH:mm')
+            )
+        }
+    }
+
     function meetingItems() {
         var result = []
         if (props.meetings) {
             props.meetings.map((meeting) => {
                 result.push(
 
-                    <div className={props.col ? "col-md-" + props.col : "col-md-8"}>
-                        <div className="card">
+                   
+                   
+                        <div className="card mb-2">
                             {cardCover(meeting)}
 
                             <div className="card-body">
@@ -110,13 +124,13 @@ const MeetingMasonry = (props) => {
                                     <div class='col-md-6'>
                                         <h4>{t['meeting_start_time']}:</h4>
                                         <div class="text-muted mb-3">
-                                            {moment(formatGregorianDate(meeting.start_time)).format('HH:mm jYYYY/jMM/jDD')}
+                                            {calendarType(meeting.start_time)}
                                         </div>
                                     </div>
                                     <div class='col-md-6'>
                                         <h4>{t['meeting_end_time']}:</h4>
                                         <div class="text-muted mb-3">
-                                            {moment(formatGregorianDate(meeting.end_time)).format('HH:mm YYYY/MM/DD')}
+                                            {calendarType(meeting.end_time)}
                                         </div>
                                     </div>
                                 </div>
@@ -129,7 +143,7 @@ const MeetingMasonry = (props) => {
                             </div>
                             {attend(meeting)}
                         </div>
-                    </div>
+
                 )
             })
         }

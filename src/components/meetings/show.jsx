@@ -13,14 +13,14 @@ import FlyerCard from "../flyers/card.jsx";
 import PollCard from "../polls/create.jsx";
 
 import {
-  isFirefox
+  isFirefox, isMobile
 } from "react-device-detect";
 import {
   appendChat, chatItems, throttle, send, wsSend, keydownHandler, scrollChat
 } from "../rooms/chat.js";
 
 moment.locale('fa', { useGregorianParser: true });
-const t = dict['fa']
+var t = dict['farsi']
 
 export default class MeetingShow extends React.Component {
 
@@ -44,6 +44,8 @@ export default class MeetingShow extends React.Component {
 
     this.state = {
       token: window.localStorage.getItem('token'),
+      lang: window.localStorage.getItem('lang'),
+      dir: window.localStorage.getItem('dir'),
       title: null,
       start_time: null,
       end_time: null,
@@ -82,6 +84,13 @@ export default class MeetingShow extends React.Component {
 
       polls: null,
       star: null,
+
+      is_presenter: false,
+      is_moderator: false,
+      is_speaker: false,
+
+      activeTab: 'details',
+      attendeesCount: 0,
     }
 
   }
@@ -110,6 +119,7 @@ export default class MeetingShow extends React.Component {
   }
 
   componentDidMount() {
+    t = dict[this.state.lang]
     var self = this;
     MyActions.getInstance('meetings', this.props.match.params.id, this.state.token);
     socket.on('connect', function () {
@@ -181,10 +191,14 @@ export default class MeetingShow extends React.Component {
         cover: model.cover,
         uploads: model.uploads,
         is_admin: model.is_admin,
+        is_presenter: model.is_presenter,
+        is_moderator: model.is_moderator,
+        is_speaker: model.is_speaker,
         bigblue: model.bigblue,
         internal: model.internal,
         sata: model.sata,
         attending: model.attending,
+        attendeesCount: model.attendees_count
       }, () => {
         if (!this.state.attending) {
           window.location.replace('/#/meetings')
@@ -214,14 +228,14 @@ export default class MeetingShow extends React.Component {
           this.setState({ timelyAlert: true })
         }
         if (this.state.is_admin) {
-          if (isFirefox){
+          if (isFirefox || isMobile){
             window.location.replace(model.url)
           } else {
             window.open(model.url, '_blank')
           }
         }
         if (!model.full && !this.state.is_admin && model.timely) {
-          if (isFirefox){
+          if (isFirefox || isMobile){
             window.location.replace(model.url)
           } else {
             window.open(model.url, '_blank')
@@ -292,12 +306,6 @@ export default class MeetingShow extends React.Component {
               <a style={{ cursor: 'pointer' }} onClick={() => this.loadContent(flyer.quill_content)} class="text-body d-block">{flyer.title}</a>
             </div>
             {this.editFlyerBtn(flyer)}
-            <div class="col-auto p-0">
-              <a style={{ cursor: 'pointer', color: '#f4f6fa' }} onClick={() => this.loadContent(flyer.quill_content)} class="text-body d-block">
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="5" y1="12" x2="19" y2="12" /><line x1="5" y1="12" x2="11" y2="18" /><line x1="5" y1="12" x2="11" y2="6" /></svg>
-              </a>
-            </div>
-
           </div>
         </div>
       )
@@ -434,7 +442,7 @@ export default class MeetingShow extends React.Component {
 
   roomBtn() {
     var result = []
-    if (this.state.internal || this.state.sata) {
+    if ((this.state.internal || this.state.sata) && (this.state.is_speaker || this.state.is_moderator || this.state.is_presenter)) {
       result.push(
         <a href={"/#/rooms/" + this.state.room_id + "?rnd=" + uuidv4()} onClick={this.forceUpdate} class="btn bg-green-lt">
           {t['enter_room']}
@@ -519,8 +527,6 @@ export default class MeetingShow extends React.Component {
   }
 
   render() {
-    const t = dict['fa']
-
     return (
       <body className="antialiased">
         <div className="wrapper">
@@ -545,7 +551,7 @@ export default class MeetingShow extends React.Component {
                       <div className="card-header bg-dark-lt" >
                         <h3 class="card-title">{this.state.title}</h3>
                         <ul class="nav nav-pills card-header-pills">
-                          <li class="nav-item" style={{ marginRight: '10px' }}>
+                          <li class="nav-item mx-2">
                             {this.isPrivateBadge()}
                           </li>
                           {this.editMeetingBtn()}
@@ -553,31 +559,31 @@ export default class MeetingShow extends React.Component {
                       </div>
                       <ul class="nav nav-tabs" data-bs-toggle="tabs">
                         <li class="nav-item">
-                          <a href="#tabs-home-9" class="nav-link active" data-bs-toggle="tab">
+                          <a onClick={() => this.setState({activeTab: 'details'})}  className={this.state.activeTab == "details" ? "nav-link active" : "nav-link"} data-bs-toggle="tab">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><circle cx="12" cy="12" r="9" /><line x1="12" y1="8" x2="12.01" y2="8" /><polyline points="11 12 12 12 12 16 13 16" /></svg>
                             {t['details']}
                           </a>
                         </li>
                         <li class="nav-item">
-                          <a href="#tabs-profile-9" onClick={() => this.scrollChat()} class="nav-link" data-bs-toggle="tab">
+                          <a onClick={() => {this.scrollChat(); this.setState({activeTab: 'chats'})}} className={this.state.activeTab == "chats" ? "nav-link active" : "nav-link"} data-bs-toggle="tab">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M21 14l-3 -3h-7a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1h9a1 1 0 0 1 1 1v10" /><path d="M14 15v2a1 1 0 0 1 -1 1h-7l-3 3v-10a1 1 0 0 1 1 -1h2" /></svg>
                             {t['chats']}
                           </a>
                         </li>
                         <li class="nav-item">
-                          <a href="#tabs-vote" class="nav-link" data-bs-toggle="tab">
+                          <div onClick={() => this.setState({activeTab: 'polls'})}  className={this.state.activeTab == "polls" ? "nav-link active" : "nav-link"}  data-bs-toggle="tab ">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3" /><line x1="12" y1="12" x2="20" y2="7.5" /><line x1="12" y1="12" x2="12" y2="21" /><line x1="12" y1="12" x2="4" y2="7.5" /></svg>
                             {t['polls']}
-                          </a>
+                          </div>
                         </li>
-                        <span href="#" class="badge bg-teal ms-auto mt-2 mx-2">
+                        <span  class="badge bg-teal ms-auto mt-2 mx-2">
                           {t['viewers']} {this.state.userCounter}
                         </span>
                       </ul>
 
 
                       <div class="tab-content">
-                        <div class="tab-pane active show" id='tabs-home-9'>
+                        <div className={this.state.activeTab == "details" ? "tab-pane active show" : "tab-pane"}>
                           <div class="card-body">
                             <h4>{t['related_to_event']}:</h4>
                             <div class="text-muted mb-3">
@@ -619,7 +625,7 @@ export default class MeetingShow extends React.Component {
                         {this.fullAlert()}
                         {this.timelyAlert()}
 
-                        <div class="tab-pane" id='tabs-profile-9' >
+                        <div className={this.state.activeTab == "chats" ? "tab-pane active show" : "tab-pane"} id='tabs-profile-9' >
                           <div class="card mb-3 maxh-250 minh-250" style={{ borderColor: 'white', boxShadow: 'none' }}>
                             <div class="list-group list-group-flush overflow-auto" id='chat-box' style={{ maxHeight: '25rem' }}>
                               {this.chatItems()}
@@ -641,7 +647,7 @@ export default class MeetingShow extends React.Component {
                           </div>
                         </div>
 
-                        <div class="tab-pane" id='tabs-vote' >
+                        <div className={this.state.activeTab == "polls" ? "tab-pane active show" : "tab-pane"} id='tabs-vote' >
                           <div class="card mb-3" style={{ borderColor: 'white', boxShadow: 'none' }}>
                             <div className='card-body p-0' style={{ maxHeight: '250px', overflowY: 'scroll' }}>
                                   {this.pollSettings()}
@@ -653,8 +659,6 @@ export default class MeetingShow extends React.Component {
                         </div>
                       </div>
                     </div>
-
-                    <AttendanceCard is_admin={this.state.is_admin} attendees={this.state.attendees} attendable_type='meeting' attendable_id={this.state.id} />
 
                     <div class="card mb-3">
                       <div class="card-status-top bg-azure"></div>
@@ -682,6 +686,10 @@ export default class MeetingShow extends React.Component {
                         {this.uploads()}
                       </div>
                     </div>
+
+                    <AttendanceCard is_admin={this.state.is_admin} attendees={this.state.attendees} attendeesCount={this.state.attendeesCount} attendable_type='meeting' attendable_id={this.state.id} lang={this.state.lang} />
+
+
                   </div>
 
                   <FlyerCard quill_content={this.state.quill_content} cover={this.state.cover} />

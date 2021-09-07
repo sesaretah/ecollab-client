@@ -13,7 +13,7 @@ import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
 
-const t = dict['fa']
+var t = dict['farsi']
 
 export default class ExhibitionIndex extends React.Component {
 
@@ -25,6 +25,8 @@ export default class ExhibitionIndex extends React.Component {
 
         this.state = {
             token: window.localStorage.getItem('token'),
+            lang: window.localStorage.getItem('lang'),
+            dir: window.localStorage.getItem('dir'),
             title: null,
             exhibitions: null,
             allTags: null,
@@ -36,6 +38,7 @@ export default class ExhibitionIndex extends React.Component {
             userAbilities: null,
             event_id: null,
             events: [],
+            event_name: '',
         }
 
     }
@@ -52,16 +55,25 @@ export default class ExhibitionIndex extends React.Component {
     }
 
     componentDidMount() {
+        t = dict[this.state.lang]
+        var location = window.location.href.split('#')[0].split('/')
+        var event_name = location[3]
+        if(event_name !== ''){
+            this.setState({ event_name: event_name })
+        }
+
         const value = queryString.parse(this.props.location.search);
         if (value.event_id) {
             this.setState({ event_id: value.event_id })
-            MyActions.getList('exhibitions', this.state.page, { event_id: value.event_id }, this.state.token);
-        } else {
-            MyActions.getList('exhibitions/related', this.state.page, {}, this.state.token);
+            MyActions.getList('exhibitions/search', this.state.page, { event_id: value.event_id, event_name: event_name }, this.state.token);
+        } 
+        if (event_name !== '') {
+            MyActions.getList('exhibitions/search', this.state.page, {event_name: event_name}, this.state.token);
         }
 
-      
-
+        if (event_name === '' && !value.event_id) {
+            MyActions.getList('exhibitions/related', this.state.page, {}, this.state.token);
+        }
 
         if (this.state.token && this.state.token.length > 10) {
             MyActions.getInstance('profiles/my', 1, this.state.token);
@@ -161,7 +173,7 @@ export default class ExhibitionIndex extends React.Component {
                             </div>
                         </div>
                     </div>
-                    <ExhibitionCard exhibitions={this.state.exhibitions} col={8} />
+                    <ExhibitionCard exhibitions={this.state.exhibitions} col={8} lang={this.state.lang} />
                 </React.Fragment>
             )
         } else {
@@ -173,7 +185,7 @@ export default class ExhibitionIndex extends React.Component {
         if (this.state.exhibitions) {
             return (
                 <div class='row row-cards' data-masonry='{"percentPosition": true }'  >
-                    <ExhibitionCard exhibitions={this.state.exhibitions} col={6} />
+                    <ExhibitionCard exhibitions={this.state.exhibitions} col={6}  lang={this.state.lang}/>
                 </div>
             )
         }
@@ -181,7 +193,7 @@ export default class ExhibitionIndex extends React.Component {
 
     search() {
         $('#search-spinner').show();
-        var data = { q: this.state.q, tags: this.state.tags }
+        var data = { q: this.state.q, tags: this.state.tags, event_name: this.state.event_name }
         this.setState({ page: 1 }, () => {
             MyActions.getList('exhibitions/search', this.state.page, data, this.state.token);
         })
@@ -256,7 +268,7 @@ export default class ExhibitionIndex extends React.Component {
         if (this.state.userAbilities && this.state.userAbilities.create_exhibition) {
             return (
                 <div class="btn-list">
-                    <a href={"/#/exhibitions/create"} class="btn btn-primary"  >
+                    <a href={"#/exhibitions/create"} class="btn btn-primary"  >
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         {t['create_exhibition']}
                     </a>

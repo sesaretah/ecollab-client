@@ -10,7 +10,9 @@ import DatePicker from "react-datepicker";
 import queryString from 'query-string'
 import RangeSlider from 'react-bootstrap-range-slider';
 import moment from 'moment-jalaali'
+import mm from 'moment';
 import DatePicker2 from 'react-datepicker2';
+import "react-datepicker/dist/react-datepicker.css";
 import { Typeahead, withAsync } from 'react-bootstrap-typeahead';
 import {
   validateExistence
@@ -18,7 +20,7 @@ import {
 
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
-const t = dict['fa']
+var t = dict['farsi']
 
 export default class MeetingCreate extends React.Component {
 
@@ -29,17 +31,19 @@ export default class MeetingCreate extends React.Component {
     this.handleChange = this.handleChange.bind(this);
     this.getList = this.getList.bind(this);
     this.deleteInstance = this.deleteInstance.bind(this);
-    
+
     this.modal = React.createRef();
     this.validateExistence = validateExistence.bind(this);
 
     this.state = {
       token: window.localStorage.getItem('token'),
+      lang: window.localStorage.getItem('lang'),
+      dir: window.localStorage.getItem('dir'),
       title: null,
       info: null,
       meeting_type: 'online',
-      start_time: moment(),
-      end_time: moment().add(2, 'hour'),
+      start_time: mm(),
+      end_time: mm().add(2, 'Hour'),
       event_id: null,
       capacity: 20,
       editing: false,
@@ -52,6 +56,8 @@ export default class MeetingCreate extends React.Component {
       internal: false,
       sata: false,
       validationItems: [],
+
+      isGregorian: false,
     }
 
   }
@@ -71,6 +77,14 @@ export default class MeetingCreate extends React.Component {
   }
 
   componentDidMount() {
+    t = dict[this.state.lang]
+    if (this.state.lang === 'farsi') {
+      this.setState({
+        start_from: moment(),
+        start_to: moment().add(2, 'jMonth'),
+        isGregorian: false,
+      })
+    }
     const value = queryString.parse(this.props.location.search);
     this.setState({ event_id: value.event_id })
     if (this.props.match.params.id) {
@@ -131,7 +145,7 @@ export default class MeetingCreate extends React.Component {
         console.log(this.state)
         this.changeType(this.state.meeting_type)
         this.tagSelected(this.state.tags);
-        if(!this.state.is_admin){
+        if (!this.state.is_admin) {
           this.props.history.push("/meetings/")
         }
       })
@@ -140,7 +154,7 @@ export default class MeetingCreate extends React.Component {
 
   submit() {
     var data = this.state
-    if(this.validateExistence(['title', 'info'])){
+    if (this.validateExistence(['title', 'info'])) {
       $('#submit-button').hide();
       $('#submit-spinner').show();
       if (!this.state.editing) {
@@ -155,7 +169,7 @@ export default class MeetingCreate extends React.Component {
 
   changeType(e) {
     this.setState({ meeting_type: e })
-   // this.modal.current.click();
+    // this.modal.current.click();
   }
 
   changeService(e) {
@@ -266,10 +280,65 @@ export default class MeetingCreate extends React.Component {
   deleteBtn() {
     if (this.state.editing) {
       return (
-        <button id='delete-button' onClick={() =>{ if (window.confirm(t['are_you_sure'])) this.deleteMeeting()}} class="btn btn-danger ms-auto">
+        <button id='delete-button' onClick={() => { if (window.confirm(t['are_you_sure'])) this.deleteMeeting() }} class="btn btn-danger ms-auto">
           <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><line x1="4" y1="7" x2="20" y2="7" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
           {t['delete']}
         </button>
+      )
+    }
+  }
+
+  calendarType() {
+    if (this.state.lang === 'farsi') {
+      return (
+        <React.Fragment>
+          <div class="mb-3">
+            <label class="form-label">{t['meeting_start_time']}<span class="form-label-description"></span></label>
+            <DatePicker2
+              isGregorian={false}
+              onChange={value => { this.setState({ start_time: value }) }}
+              value={moment(this.state.start_time)}
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">{t['meeting_end_time']}<span class="form-label-description"></span></label>
+            <DatePicker2
+              isGregorian={false}
+              onChange={value => { this.setState({ end_time: value }) }}
+              value={moment(this.state.end_time)}
+            />
+          </div>
+        </React.Fragment>
+      )
+    } else {
+      return (
+        <React.Fragment>
+          <div class="mb-3">
+            <label class="form-label">{t['meeting_start_time']}<span class="form-label-description"></span></label>
+            <DatePicker
+              onChange={value => { this.setState({ start_time: value }) }}
+              showTimeSelect
+              timeIntervals={15}
+              timeCaption="time"
+              dateFormat="yyyy/MM/dd HH:mm"
+              selected={mm(this.state.start_time).toDate()}
+              className='datepicker-input'
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">{t['meeting_end_time']}<span class="form-label-description"></span></label>
+            <DatePicker
+              onChange={value => { this.setState({ end_time: value }) }}
+              showTimeSelect
+              timeIntervals={15}
+              timeCaption="time"
+              dateFormat="yyyy/MM/dd HH:mm"
+              selected={mm(this.state.end_time).toDate()}
+              className='datepicker-input'
+            />
+          </div>
+        </React.Fragment>
       )
     }
   }
@@ -279,7 +348,7 @@ export default class MeetingCreate extends React.Component {
     const { is_private } = this.state;
     return (
       <body className="antialiased">
-        <Validation items={this.state.validationItems} modal={this.modal}/>
+        <Validation items={this.state.validationItems} modal={this.modal} lang={this.state.lang} />
         <div className="wrapper">
           <Header history={this.props.history} />
           <div className="page-wrapper">
@@ -373,23 +442,7 @@ export default class MeetingCreate extends React.Component {
                           </div>
 
 
-                          <div class="mb-3">
-                            <label class="form-label">{t['meeting_start_time']}<span class="form-label-description"></span></label>
-                            <DatePicker2
-                              isGregorian={false}
-                              onChange={value => { this.setState({ start_time: value }) }}
-                              value={moment(this.state.start_time)}
-                            />
-                          </div>
-
-                          <div class="mb-3">
-                            <label class="form-label">{t['meeting_end_time']}<span class="form-label-description"></span></label>
-                            <DatePicker2
-                              isGregorian={false}
-                              onChange={value => { this.setState({ end_time: value }) }}
-                              value={moment(this.state.end_time)}
-                            />
-                          </div>
+                          {this.calendarType()}
 
 
                           <div class="mb-3">

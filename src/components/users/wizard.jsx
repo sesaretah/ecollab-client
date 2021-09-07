@@ -13,7 +13,7 @@ import {
 
 const AsyncTypeahead = withAsync(Typeahead);
 const server = conf.server;
-const t = dict['fa']
+var t = dict['farsi']
 
 
 
@@ -33,6 +33,8 @@ export default class UserWizard extends React.Component {
         
         this.state = {
             token: window.localStorage.getItem('token'),
+            lang: window.localStorage.getItem('lang'),
+            dir: window.localStorage.getItem('dir'),
             email: null,
             name: null,
             password: null,
@@ -62,6 +64,7 @@ export default class UserWizard extends React.Component {
     }
 
     componentDidMount() {
+        t = dict[this.state.lang]
         if (this.state.token && this.state.token !== '') {
             MyActions.getInstance('profiles/my', '1', this.state.token);
         }
@@ -323,7 +326,7 @@ export default class UserWizard extends React.Component {
     render() {
         return (
             <div class="page page-center">
-                <Validation items={this.state.validationItems} modal={this.modal} />
+                <Validation items={this.state.validationItems} modal={this.modal} lang={this.state.lang} />
                 <div class="container-tight py-4">
                     {this.checkSignUp()}
 
